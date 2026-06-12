@@ -27,13 +27,6 @@ Sistem pendukung keputusan klinis untuk evaluasi risiko HIV berbasis algoritma K
 npm install
 ```
 
-Buat file `.env.local` di root project:
-
-```
-GEMINI_API_KEY=your_api_key_here
-APP_URL=http://localhost:3000
-```
-
 Lalu jalankan:
 
 ```bash
