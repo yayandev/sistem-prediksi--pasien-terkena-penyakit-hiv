@@ -13,13 +13,19 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { addPrediction } from '../lib/firestore';
 import { predict, loadTrainingData } from '../ml/runner';
-import { ArrowLeft, ArrowRight, Zap, Check, AlertTriangle, Database, Save, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Zap, Check, AlertTriangle, Database, Save, Loader2, Trash2, Info, Target, BarChart3 } from 'lucide-react';
 
 interface PredictionResult {
   predictedClass: number;
   predictedLabel: string;
-  neighbors: Array<{ label: number; distance: number; rank: number }>;
+  confidence: number;
+  neighbors: Array<{ label: number; labelName: string; distance: number; rank: number; features: number[] }>;
   votes: Record<number, number>;
+  votePercentages: Record<number, number>;
+  queryRaw: number[];
+  queryNormalized: number[];
+  featureDistances: Array<{ feature: string; contribution: number }>;
+  kUsed: number;
 }
 
 const CLASS_LABELS: Record<number, string> = {
@@ -27,6 +33,12 @@ const CLASS_LABELS: Record<number, string> = {
   1: 'Bukan ODHIV',
   2: 'ODHIV',
 };
+
+const FEATURE_NAMES = [
+  'Umur', 'Jenis Kelamin', 'Kelompok Populasi', 'Alasan Kunjungan',
+  'Riwayat Tes HIV', 'Riwayat IMS', 'Jumlah Pasangan', 'Penggunaan Kondom',
+  'NAPZA Suntik', 'Status Pernikahan', 'Usia Pertama Hubungan', 'Terapi ARV', 'Gejala Klinis',
+];
 
 const STEPS = [
   { id: 1, label: 'Identitas' },
@@ -76,6 +88,7 @@ export default function Predictor() {
   const [trainingDataLoaded, setTrainingDataLoaded] = useState(false);
   const [loadingTraining, setLoadingTraining] = useState(false);
   const [belumPernah, setBelumPernah] = useState(false);
+  const [selectedK, setSelectedK] = useState(3);
 
   useEffect(() => {
     async function init() {
@@ -115,7 +128,7 @@ export default function Predictor() {
       return;
     }
     try {
-      const pred = predict(nums);
+      const pred = predict(nums, selectedK);
       setResult(pred);
       setStep(4);
     } catch (err: unknown) {
@@ -374,60 +387,213 @@ export default function Predictor() {
       {/* Step 4: Hasil */}
       {step === 4 && result && (
         <div className="space-y-6">
-          {/* Prediction Result */}
+
+          {/* 1. Hasil Utama — Prediksi + Confidence */}
           <div className="bg-white border-2 border-slate-900 p-6 sm:p-8">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-6">Hasil Prediksi</h3>
-            <div className="flex items-center gap-4 mb-6 p-5 bg-slate-50 rounded-xl border border-slate-200">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black ${
-                result.predictedClass === 1 ? 'bg-red-100 text-red-700 border border-red-200' :
-                result.predictedClass === 2 ? 'bg-slate-100 text-slate-500 border border-slate-200' :
-                'bg-green-100 text-green-700 border border-green-200'
+            <div className="flex flex-col sm:flex-row items-start gap-5 mb-6">
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black shrink-0 ${
+                result.predictedClass === 0 ? 'bg-green-100 text-green-700 border-2 border-green-200' :
+                result.predictedClass === 1 ? 'bg-slate-100 text-slate-700 border-2 border-slate-200' :
+                'bg-red-100 text-red-700 border-2 border-red-200'
               }`}>
-                K{result.predictedClass}
+                {result.predictedClass === 0 ? '?' : result.predictedClass === 1 ? 'X' : '!'}
               </div>
-              <div>
-                <p className="text-[11px] text-slate-500 uppercase font-semibold mb-1">Prediksi</p>
-                <p className="text-lg sm:text-xl font-bold text-slate-900">{result.predictedLabel}</p>
+              <div className="flex-1">
+                <p className="text-[11px] text-slate-500 uppercase font-semibold mb-1">Prediksi Sistem</p>
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">{result.predictedLabel}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-500">Confidence:</span>
+                  <div className="flex-1 max-w-[200px] h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${result.confidence >= 0.6 ? 'bg-green-500' : result.confidence >= 0.4 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${result.confidence * 100}%` }} />
+                  </div>
+                  <span className="text-sm font-bold text-slate-900">{(result.confidence * 100).toFixed(1)}%</span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">K = {result.kUsed} tetangga • {result.votes[result.predictedClass]} dari {result.kUsed} suara</p>
               </div>
             </div>
 
-            {/* Vote Details */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {Object.entries(result.votes).map(([k, v]) => {
-                const label = CLASS_LABELS[Number(k)];
-                const isWinner = Number(k) === result.predictedClass;
+            {/* Interpretasi Hasil */}
+            <div className={`p-4 rounded-xl border text-sm leading-relaxed ${
+              result.predictedClass === 0 ? 'bg-green-50 border-green-200 text-green-800' :
+              result.predictedClass === 1 ? 'bg-slate-50 border-slate-200 text-slate-700' :
+              'bg-red-50 border-red-200 text-red-800'
+            }`}>
+              <div className="flex items-start gap-2 mb-1.5">
+                {result.predictedClass === 0 && <Info className="w-4 h-4 mt-0.5 shrink-0" />}
+                {result.predictedClass === 1 && <Check className="w-4 h-4 mt-0.5 shrink-0" />}
+                {result.predictedClass === 2 && <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}
+                <span className="font-bold">
+                  {result.predictedClass === 0 && 'Status Belum Diketahui'}
+                  {result.predictedClass === 1 && 'Bukan ODHIV (Orang Dengan HIV)'}
+                  {result.predictedClass === 2 && 'ODHIV (Orang Dengan HIV)'}
+                </span>
+              </div>
+              <p className="text-xs opacity-80">
+                {result.predictedClass === 0 && 'Pasien terdeteksi memiliki karakteristik "Belum Tahu" — kemungkinan belum pernah melakukan tes HIV atau hasil tes sebelumnya tidak tersedia.'}
+                {result.predictedClass === 1 && 'Berdasarkan {result.kUsed} pasien terdekat, mayoritas diklasifikasikan sebagai Bukan ODHIV. Tidak ditemukan indikasi kuat terinfeksi HIV berdasarkan fitur yang dimasukkan.'}
+                {result.predictedClass === 2 && 'Berdasarkan {result.kUsed} pasien terdekat, terdapat indikasi kuat terinfeksi HIV. Segera lakukan tes konfirmasi di fasilitas kesehatan terdekat.'}
+              </p>
+            </div>
+          </div>
+
+          {/* 2. Voting Breakdown */}
+          <div className="bg-white border-2 border-slate-900 p-6 sm:p-8">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-5 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Breakdown Suara Voting (K={result.kUsed})
+            </h3>
+            <p className="text-xs text-slate-500 mb-5">Algoritma KNN mengumpulkan suara dari {result.kUsed} tetangga terdekat. Kelas dengan suara terbanyak menang.</p>
+            <div className="space-y-4">
+              {[0, 1, 2].map((cls) => {
+                const votes = result.votes[cls] || 0;
+                const pct = result.votePercentages[cls] || 0;
+                const isWinner = cls === result.predictedClass;
                 return (
-                  <div key={k} className={`p-3 rounded-xl border-2 text-center transition-all ${isWinner ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white'}`}>
-                    <p className={`text-[10px] font-bold uppercase mb-1 ${isWinner ? 'text-white/60' : 'text-slate-400'}`}>K{k}</p>
-                    <p className={`text-xl font-black ${isWinner ? 'text-white' : 'text-slate-700'}`}>{v}</p>
-                    <p className={`text-[10px] mt-0.5 ${isWinner ? 'text-white/70' : 'text-slate-500'}`}>{label}</p>
+                  <div key={cls} className={`p-4 rounded-xl border-2 transition-all ${isWinner ? 'border-slate-900 bg-slate-50' : 'border-slate-100'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${cls === 0 ? 'bg-green-500' : cls === 1 ? 'bg-slate-400' : 'bg-red-500'}`} />
+                        <span className="text-sm font-bold text-slate-900">{CLASS_LABELS[cls]}</span>
+                        {isWinner && <span className="text-[10px] px-2 py-0.5 bg-slate-900 text-white rounded-full font-bold">MENANG</span>}
+                      </div>
+                      <span className="text-sm font-bold text-slate-700">{votes} suara <span className="text-slate-400 font-normal">({(pct * 100).toFixed(0)}%)</span></span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-500 ${cls === 0 ? 'bg-green-500' : cls === 1 ? 'bg-slate-400' : 'bg-red-500'}`} style={{ width: `${pct * 100}%` }} />
+                    </div>
                   </div>
                 );
               })}
             </div>
+          </div>
 
-            {/* Neighbor Table */}
+          {/* 3. Detail Tetangga Terdekat */}
+          <div className="bg-white border-2 border-slate-900 p-6 sm:p-8">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-5 flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              {result.kUsed} Tetangga Terdekat
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">Jarak dihitung menggunakan Euclidean Distance. Semakin kecil jarak, semakin mirip tetangga tersebut dengan data pasien.</p>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-3 font-bold text-slate-500 uppercase">Rank</th>
-                    <th className="text-left py-2 px-3 font-bold text-slate-500 uppercase">Label</th>
-                    <th className="text-left py-2 px-3 font-bold text-slate-500 uppercase">Jarak</th>
+                  <tr className="border-b-2 border-slate-200">
+                    <th className="text-left py-2.5 px-3 font-bold text-slate-500 uppercase">Rank</th>
+                    <th className="text-left py-2.5 px-3 font-bold text-slate-500 uppercase">Label</th>
+                    <th className="text-left py-2.5 px-3 font-bold text-slate-500 uppercase">Jarak (d)</th>
+                    <th className="text-left py-2.5 px-3 font-bold text-slate-500 uppercase">Bobot (1/d)</th>
+                    <th className="text-left py-2.5 px-3 font-bold text-slate-500 uppercase">Kontribusi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {result.neighbors.map((n) => (
-                    <tr key={n.rank} className="border-b border-slate-100">
-                      <td className="py-2 px-3 font-semibold text-slate-700">#{n.rank}</td>
-                      <td className="py-2 px-3 font-semibold text-slate-700">{CLASS_LABELS[n.label]}</td>
-                      <td className="py-2 px-3 font-mono text-slate-600">{n.distance.toFixed(4)}</td>
+                  {result.neighbors.map((n) => {
+                    const weight = n.distance > 0 ? 1 / n.distance : 0;
+                    const maxWeight = Math.max(...result.neighbors.map(nb => nb.distance > 0 ? 1 / nb.distance : 0));
+                    const barWidth = maxWeight > 0 ? (weight / maxWeight) * 100 : 0;
+                    return (
+                      <tr key={n.rank} className={`border-b border-slate-100 ${n.label === result.predictedClass ? 'bg-slate-50' : ''}`}>
+                        <td className="py-2.5 px-3 font-bold text-slate-700">#{n.rank}</td>
+                        <td className="py-2.5 px-3">
+                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            n.label === 0 ? 'bg-green-100 text-green-700' :
+                            n.label === 1 ? 'bg-slate-100 text-slate-600' :
+                            'bg-red-100 text-red-700'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${n.label === 0 ? 'bg-green-500' : n.label === 1 ? 'bg-slate-400' : 'bg-red-500'}`} />
+                            {n.labelName}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-slate-600">{n.distance.toFixed(4)}</td>
+                        <td className="py-2.5 px-3 font-mono text-slate-600">{weight.toFixed(4)}</td>
+                        <td className="py-2.5 px-3">
+                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-slate-400 rounded-full" style={{ width: `${barWidth}%` }} />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 4. Kontribusi Fitur — Fitur mana yang paling menentukan */}
+          {result.featureDistances.length > 0 && (
+            <div className="bg-white border-2 border-slate-900 p-6 sm:p-8">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-5 flex items-center gap-2">
+                <Info className="w-4 h-4" />
+                Kontribusi Fitur terhadap Jarak
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">Fitur dengan kontribusi jarak terbesar paling mempengaruhi hasil prediksi. Semakin besar, semakin berbeda data pasien dengan tetangganya pada fitur tersebut.</p>
+              <div className="space-y-3">
+                {result.featureDistances.slice(0, 8).map((f, i) => {
+                  const maxContrib = result.featureDistances[0]?.contribution || 1;
+                  const pct = (f.contribution / maxContrib) * 100;
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-xs text-slate-500 w-36 text-right shrink-0">{f.feature}</span>
+                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-slate-700 rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-500 w-12">{f.contribution.toFixed(3)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 5. Penjelasan Proses KNN */}
+          <div className="bg-slate-50 border border-slate-200 p-6 sm:p-8">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-4">Cara Kerja KNN pada Prediksi Ini</h3>
+            <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
+              <div className="flex gap-3">
+                <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                <p><strong>Normalisasi:</strong> Seluruh 13 fitur input dinormalisasi ke rentang [0, 1] menggunakan metode Min-Max Scaling agar setiap fitur memiliki bobot yang setara.</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                <p><strong>Euclidean Distance:</strong> Jarak dihitung ke seluruh {result.kUsed} pasien pada data training menggunakan rumus: d = &radic;&Sigma;(x<sub>i</sub> - y<sub>i</sub>)&sup2;</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                <p><strong>Pemilihan K Tetangga:</strong> Diambil {result.kUsed} data training dengan jarak terkecil (paling mirip) dari data pasien.</p>
+              </div>
+              <div className="flex gap-3">
+                <span className="w-5 h-5 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+                <p><strong>Majority Voting:</strong> Kelas yang paling banyak muncul di antara {result.kUsed} tetangga menjadi hasil prediksi: <strong className="text-slate-900">{result.predictedLabel}</strong> ({result.votes[result.predictedClass]}/{result.kUsed} suara).</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 6. Data Mentah (bisa di-collapse) */}
+          <details className="bg-white border border-slate-200 p-4 sm:p-6 group">
+            <summary className="text-xs font-bold text-slate-500 uppercase tracking-widest cursor-pointer select-none hover:text-slate-700 transition-colors">
+              Data Mentah Input & Normalisasi
+            </summary>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 px-2 font-bold text-slate-500 uppercase">Fitur</th>
+                    <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase">Nilai Asli</th>
+                    <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase">Nilai Normal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {FEATURE_NAMES.map((name, i) => (
+                    <tr key={i} className="border-b border-slate-50">
+                      <td className="py-1.5 px-2 text-slate-600">{name}</td>
+                      <td className="py-1.5 px-2 text-right font-mono text-slate-700">{result.queryRaw[i]}</td>
+                      <td className="py-1.5 px-2 text-right font-mono text-slate-500">{result.queryNormalized[i].toFixed(4)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </details>
 
           {/* Save Button */}
           {user && (
