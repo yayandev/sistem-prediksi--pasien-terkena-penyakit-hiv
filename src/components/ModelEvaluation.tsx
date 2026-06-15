@@ -20,7 +20,7 @@ import { smoteAllClasses } from '../utils/sMOTE';
 import { getBounds, normalizeDataset, getLabels } from '../utils/normalization';
 import { correlationMatrix } from '../utils/correlation';
 import rawDataset from '../data/raw_hiv_dataset.json';
-import { Table2, Target, TrendingUp, BarChart3, Layers, ChevronDown, ChevronUp, Code } from 'lucide-react';
+import { Table2, Target, TrendingUp, BarChart3, Layers, ChevronDown, ChevronUp, Code, Lightbulb } from 'lucide-react';
 
 /* ================================================================
    CodeBlock — komponen reusable untuk menampilkan blok kode
@@ -133,6 +133,25 @@ export default function ModelEvaluation() {
           </ul>
         </div>
 
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>Data Cleaning</strong> adalah tahap pertama dalam preprocessing. Konsepnya sederhana: kalau ada data yang kosong (null), buang aja seluruh barisnya. Kenapa? Karena KNN itu hitung jarak antara titik — dan kalau salah satu fitur kosong, kita nggak bisa ngitung jaraknya.
+            </p>
+            <p>
+              Bayangin kamu mau ngukur jarak rumahmu ke rumah temen. Tapi kamu nggak tahu alamat temen kamu di mana (kosong). Ya nggak bisa kan? Sama aja with data — setiap fitur itu seperti "koordinat" yang harus lengkap.
+            </p>
+            <p>
+              Di dataset kita, ada <strong>{preprocessing.report.removedRows} baris</strong> yang kosong di kolom "kelompok_populasi". Daripada nebak (imputasi), mending buang aja karena jumlahnya sedikit dan nggak ngaruh signifikan ke model.
+            </p>
+          </div>
+        </div>
+
         {/* Tabel */}
         <div className="overflow-x-auto">
           <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Contoh Data Setelah Dibersihkan:</h4>
@@ -206,6 +225,28 @@ export default function ModelEvaluation() {
             <li>• <strong>LabelEncoder urutkan alfabet</strong> → Laki-laki=0, Perempuan=1.</li>
             <li>• <strong>Sama kayak jurnal (hal. 129):</strong> "LabelEncoder berfungsi untuk mengubah setiap nilai dalam kolom menjadi angka berurutan."</li>
           </ul>
+        </div>
+
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>LabelEncoder</strong> bekerja dengan cara: (1) kumpulkan semua nilai unik di satu kolom, (2) urutkan secara alfabet, (3) kasih angka berurutan mulai dari 0.
+            </p>
+            <p>
+              Misalnya kolom "jenis_kelamin" punya nilai "Laki-laki" dan "Perempuan". Diurutkan alfabet: Laki-laki (L) duluan, Perempuan (P) kedua. Maka: Laki-laki = 0, Perempuan = 1.
+            </p>
+            <p>
+              <strong>Penting:</strong> Mapping ini harus konsisten! Kalau "Laki-laki" = 0 di data training, maka di data testing juga harus 0. Makanya kita simpan "encoding maps" — supaya bisa dipake ulang saat prediksi data baru.
+            </p>
+            <p>
+              Rumus matematikanya sederhana: <code>encoded_value = index_of_sorted_unique_values</code>. Setiap string dipetakan ke index-nya setelah diurutkan.
+            </p>
+          </div>
         </div>
 
         {/* Mapping */}
@@ -312,6 +353,28 @@ export default function ModelEvaluation() {
           </ul>
         </div>
 
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>Fisher-Yates Shuffle</strong> adalah algoritma untuk mengacak array secara in-place dengan kompleksitas O(n). Cara kerjanya: mulai dari elemen terakhir, tukar dengan elemen acak yang posisinya di depannya (atau dirinya sendiri).
+            </p>
+            <p>
+              Rumusnya: untuk i dari (n-1) sampai 1, pilih j secara acak dari 0 sampai i, lalu tukar array[i] dengan array[j]. Ini menjamin setiap posisi punya probabilitas yang sama untuk menerima elemen apapun.
+            </p>
+            <p>
+              <strong>Kenapa pakai seed=42?</strong> Karena Math.random() di JavaScript itu random seed-nya beda tiap kali dijalankan. Kalau kita nggak pakai seed, hasil split-nya bakal beda-beda tiap run. Dengan seed, kita pakai pseudo-random generator (PRG) yang deterministik — hasilnya sama persis tiap kali.
+            </p>
+            <p>
+              <strong>Rasio 80/20</strong> dipilih karena: training harus cukup besar supaya model belajar dengan baik, tapi testing juga harus cukup buat evaluasi yang reliable. Rasio ini adalah standar di literatur machine learning.
+            </p>
+          </div>
+        </div>
+
         {/* Visualisasi */}
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 border border-slate-200">
@@ -407,6 +470,28 @@ export default function ModelEvaluation() {
           </ul>
         </div>
 
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>SMOTE (Synthetic Minority Over-sampling Technique)</strong> bekerja dengan cara membuat data sintetis baru untuk kelas minoritas. Bukan duplikat — tapi data baru yang "mirip" tapi nggak identik.
+            </p>
+            <p>
+              <strong>Langkah-langkahnya:</strong> (1) Pilih satu data acak dari kelas minoritas. (2) Cari K tetangga terdekatnya (dari kelas yang sama). (3) Pilih salah satu tetangga secara acak. (4) Bikin data baru di "garis" antara data asli dan tetangganya.
+            </p>
+            <p>
+              <strong>Rumus interpolasi:</strong> <code>x_sintetis = x_i + α × (x_nn - x_i)</code>, di mana α adalah angka acak antara 0 dan 1. Kalau α = 0.5, data baru tepat di tengah-tengah. Kalau α = 0.3, lebih dekat ke data asli.
+            </p>
+            <p>
+              <strong>Kenapa nggak duplikat aja?</strong> Karena duplikat bikin model "menghafal" data yang sama persis. SMOTE bikin variasi baru sehingga model lebih generalizable.
+            </p>
+          </div>
+        </div>
+
         {/* Visualisasi */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-4 border border-slate-200">
@@ -500,6 +585,28 @@ export default function ModelEvaluation() {
           </ul>
         </div>
 
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>Min-Max Normalization</strong> mengubah setiap fitur ke range [0, 1] tanpa mengubah distribusi relatif datanya. Rumusnya: <code>x_norm = (x - min) / (max - min)</code>.
+            </p>
+            <p>
+              <strong>Contoh konkret:</strong> Fitur "umur" punya min=21, max=62. Kalau ada pasien berumur 41 tahun: (41-21)/(62-21) = 20/41 = 0.488. Jadi nilainya jadi 0.488 (dari awalnya 41).
+            </p>
+            <p>
+              <strong>Kenapa ini kritis untuk KNN?</strong> Karena KNN pakai Euclidean Distance. Kalau fitur Usia (range 21-62) nggak dinormalisasi, selisih 1 tahun = 1 unit. Tapi fitur "penggunaan_kondom" (range 0-1), selisih 1 = 1 unit juga. Artinya Usia bakal mendominasi perhitungan jarak hanya karena angkanya lebih besar!
+            </p>
+            <p>
+              <strong>Edge case:</strong> Kalau max = min (semua nilai sama), range = 0. Kita handle dengan return 0 supaya nggak ada division by zero.
+            </p>
+          </div>
+        </div>
+
         {/* Bounds */}
         <div className="p-4 border border-slate-200">
           <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Bounds (Min/Max per Fitur):</h4>
@@ -567,6 +674,31 @@ export default function ModelEvaluation() {
             <p><strong>Input:</strong> Data training (sudah dinormalisasi) + label + data query baru + nilai K.</p>
             <p><strong>Proses:</strong> Hitung jarak → urutkan → ambil K terdekat → voting mayoritas.</p>
             <p><strong>Output:</strong> Label prediksi (0, 1, atau 2).</p>
+          </div>
+        </div>
+
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>KNN (K-Nearest Neighbors)</strong> adalah algoritma supervised learning yang paling sederhana. Prinsipnya: "Kalau kamu mau tahu seseorang masuk kategori apa, lihat orang-orang yang paling mirip dengannya."
+            </p>
+            <p>
+              <strong>Step 1 — Hitung Jarak:</strong> Setiap data baru diukur jaraknya ke SEMUA data training pakai Euclidean Distance: <code>d(p,q) = √Σ(pᵢ - qᵢ)²</code>. Makin kecil jaraknya, makin mirip.
+            </p>
+            <p>
+              <strong>Step 2 — Urutkan & Ambil K Terdekat:</strong> Jarak diurutkan dari terkecil ke terbesar, ambil K tetangga terdekat. K=3 artinya cuma lihat 3 tetangga terdekat.
+            </p>
+            <p>
+              <strong>Step 3 — Voting Mayoritas:</strong> Dari K tetangga, lihat label mana yang paling banyak muncul. Misal: 2 tetangga bilang "ODHIV", 1 bilang "Bukan" → hasilnya ODHIV.
+            </p>
+            <p>
+              <strong>Tie-breaking:</strong> Kalau suara sama (misal 1-1-1), kita pilih kelas yang total jaraknya lebih kecil ke query point.
+            </p>
           </div>
         </div>
 
@@ -655,6 +787,28 @@ export default function ModelEvaluation() {
           </ul>
         </div>
 
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>Confusion Matrix</strong> adalah tabel yang menunjukkan performa model klasifikasi. Baris = label asli, kolom = label prediksi.
+            </p>
+            <p>
+              <strong>Istilah kunci:</strong> <strong>TP (True Positive)</strong> = benar prediksi positif. <strong>TN (True Negative)</strong> = benar prediksi negatif. <strong>FP (False Positive)</strong> = salah prediksi positif (false alarm). <strong>FN (False Negative)</strong> = salah prediksi negatif (missed detection).
+            </p>
+            <p>
+              <strong>Diagonal = benar:</strong> Sel diagonal (dari kiri atas ke kanan bawah) menunjukkan berapa banyak prediksi yang tepat untuk tiap kelas. Semakin besar angka di diagonal, semakin bagus.
+            </p>
+            <p>
+              <strong>Off-diagonal = salah:</strong> Sel di luar diagonal menunjukkan kesalahan prediksi. Misal: baris "Bukan ODHIV" kolom "ODHIV" = ada pasien yang sehat tapi diprediksi sakit (false positive).
+            </p>
+          </div>
+        </div>
+
         <CodeBlock title="📄 Lihat Kode — evaluation.ts → computeConfusionMatrix()">
           <div className="whitespace-pre"><span className="text-pink-400">export function</span> <span className="text-blue-400">computeConfusionMatrix</span>(actual, predicted, numClasses) {'{'}</div>
           <div className="whitespace-pre">  <span className="text-slate-500 italic">{'// Inisialisasi matriks 3×3 dengan semua 0'}</span></div>
@@ -713,6 +867,31 @@ export default function ModelEvaluation() {
             <li>• <strong>Recall:</strong> Dari yang memang positif, berapa yang berhasil ditangkap?</li>
             <li>• <strong>F1-Score:</strong> Rata-rata harmonis Precision dan Recall.</li>
           </ul>
+        </div>
+
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>Akurasi</strong> = (TP + TN) / Total. Mudah dipahami tapi bisa menipu kalau data timpang. Misal: 99% data sehat, model bilang "semua sehat" → akurasi 99% tapi nggak berguna.
+            </p>
+            <p>
+              <strong>Precision</strong> = TP / (TP + FP). "Kalau model bilang positif, seberapa sering dia benar?" Penting kalau false alarm mahal (misal: salah tuduh orang sakit).
+            </p>
+            <p>
+              <strong>Recall</strong> = TP / (TP + FN). "Dari semua yang memang positif, berapa yang berhasil ditangkap?" Penting kalau missed detection berbahaya (misal: pasien HIV nggak terdeteksi).
+            </p>
+            <p>
+              <strong>F1-Score</strong> = 2 × (Precision × Recall) / (Precision + Recall). Rata-rata harmonis — adil karena consider Precision DAN Recall. Dipake sebagai metrik utama di optimasi K.
+            </p>
+            <p>
+              <strong>Macro Average</strong> = rata-rata metrik dari semua kelas tanpa mempertimbangkan jumlah data per kelas. Adil untuk kelas minoritas.
+            </p>
+          </div>
         </div>
 
         {/* Detail per kelas */}
@@ -774,6 +953,28 @@ export default function ModelEvaluation() {
           Pakai 5-Fold Cross-Validation buat cari K terbaik dari K=1 sampai K=15.
         </p>
 
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>Cross-Validation</strong> adalah teknik untuk mengevaluasi model dengan cara membagi data training menjadi beberapa "fold" (bagian). Setiap fold bergantian jadi data validasi, sisa jadi data training.
+            </p>
+            <p>
+              <strong>5-Fold CV</strong> artinya data dibagi jadi 5 bagian. Setiap putaran: 4 bagian buat training, 1 bagian buat validasi. Diulang 5 kali sampai semua fold pernah jadi validasi. Rata-rata skornya jadi evaluasi final.
+            </p>
+            <p>
+              <strong>Kenapa pakai CV?</strong> Kalau cuma pakai satu split train/test, hasilnya bisa kebetulan bagus (atau jelek). CV lebih reliable karena diuji berkali-kali dengan pembagian data yang berbeda.
+            </p>
+            <p>
+              <strong>Optimasi K:</strong> Kita uji K=1 sampai K=15, masing-masing dievaluasi pakai 5-Fold CV. K dengan F1-Score tertinggi dipilih sebagai K optimal. K terlalu kecil → overfitting. K terlalu besar → underfitting.
+            </p>
+          </div>
+        </div>
+
         <div className="space-y-2">
           {kOptimization.results.map((r) => (
             <div key={r.k} className="flex items-center gap-3">
@@ -821,6 +1022,28 @@ export default function ModelEvaluation() {
         <p className="text-sm text-slate-600">
           Korelasi Pearson — ngukur seberapa erat hubungan antara dua fitur dari 13 input + 1 target. Range: -1 sampai +1.
         </p>
+
+        {/* Penjelasan Algoritma */}
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <h4 className="text-sm font-semibold text-amber-900 mb-2 flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Penjelasan Algoritma
+          </h4>
+          <div className="text-xs text-amber-800 space-y-2 leading-relaxed">
+            <p>
+              <strong>Korelasi Pearson</strong> mengukur kekuatan dan arah hubungan linear antara dua variabel. Rumusnya: <code>r = Σ((xi-x̄)(yi-ȳ)) / √(Σ(xi-x̄)² × Σ(yi-ȳ)²)</code>.
+            </p>
+            <p>
+              <strong>Interpretasi:</strong> r mendekati +1 = korelasi positif kuat (naik bersama). r mendekati -1 = korelasi negatif kuat (satu naik, satu turun). r mendekati 0 = nggak ada hubungan linear.
+            </p>
+            <p>
+              <strong>Contoh:</strong> Kalau korelasi "terapi_arv" dan "status_odhiv" tinggi, artinya pasien yang dapat ARV cenderung ODHIV (wajar, karena ARV diberikan ke ODHA).
+            </p>
+            <p>
+              <strong>Untuk KNN:</strong> Korelasi membantu kita tahu fitur mana yang paling relevan. Fitur dengan korelasi tinggi ke target biasanya lebih informatif. Tapi di KNN, semua fitur tetap dipakai karena distance-based algorithms butuh semua dimensi.
+            </p>
+          </div>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
