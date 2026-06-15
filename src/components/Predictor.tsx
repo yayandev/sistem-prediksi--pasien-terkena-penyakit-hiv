@@ -92,7 +92,7 @@ export default function Predictor() {
     <div className="w-full space-y-8 sm:space-y-10">
       {/* Page Header */}
       <div className="border-b border-slate-200 pb-6 sm:pb-8 text-center max-w-2xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-semibold mb-3 tracking-tight uppercase">Sistem Prediksi Risiko Klinis</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold mb-3 tracking-tight uppercase">Sistem Prediksi Pasien Terkena Penyakit HIV</h1>
         <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
           Formulir asesmen mandiri untuk mengevaluasi faktor risiko transmisi berdasarkan analisis pola historis dan algoritma klasifikasi Machine Learning terukur.
         </p>
