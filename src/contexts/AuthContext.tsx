@@ -21,6 +21,7 @@ import {
   signOut as firebaseSignOut,
   updatePassword as firebaseUpdatePassword,
   reauthenticateWithCredential,
+  sendPasswordResetEmail,
   EmailAuthProvider,
   User,
 } from 'firebase/auth';
@@ -49,6 +50,7 @@ interface AuthContextType {
   updateUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
   addPasswordToAccount: (newPassword: string) => Promise<void>;
   hasPassword: () => boolean;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -151,8 +153,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user.providerData.some((p) => p.providerId === 'password');
   }
 
+  async function resetPassword(email: string) {
+    await sendPasswordResetEmail(auth, email);
+  }
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signInWithGoogle, signInWithEmail, registerWithEmail, signOut, updateProfileData, updateUserPassword, addPasswordToAccount, hasPassword }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, signInWithGoogle, signInWithEmail, registerWithEmail, signOut, updateProfileData, updateUserPassword, addPasswordToAccount, hasPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

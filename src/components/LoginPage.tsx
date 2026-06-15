@@ -8,12 +8,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Stethoscope, Loader2, Mail, Lock, User, ArrowRight, Heart, Shield, Activity } from 'lucide-react';
+import { Stethoscope, Loader2, Mail, Lock, User, ArrowRight, Heart, Shield, Activity, KeyRound, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 
 type TabType = 'login' | 'register';
 
 export default function LoginPage() {
-  const { signInWithGoogle, signInWithEmail, registerWithEmail } = useAuth();
+  const { signInWithGoogle, signInWithEmail, registerWithEmail, resetPassword } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabType>('login');
   const [email, setEmail] = useState('');
@@ -21,6 +21,10 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMsg, setForgotMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   async function handleGoogleLogin() {
     setError('');
@@ -71,6 +75,31 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotMsg(null);
+    if (!forgotEmail.trim()) {
+      setForgotMsg({ type: 'error', text: 'Masukkan email terdaftar Anda' });
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      await resetPassword(forgotEmail.trim());
+      setForgotMsg({ type: 'success', text: `Tautan reset password sudah dikirim ke ${forgotEmail}. Cek inbox atau spam Anda.` });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('auth/user-not-found')) {
+        setForgotMsg({ type: 'error', text: 'Email tidak terdaftar di sistem' });
+      } else if (msg.includes('auth/invalid-email')) {
+        setForgotMsg({ type: 'error', text: 'Format email tidak valid' });
+      } else {
+        setForgotMsg({ type: 'error', text: msg || 'Gagal mengirim tautan reset' });
+      }
+    } finally {
+      setForgotLoading(false);
     }
   }
 
@@ -183,6 +212,85 @@ export default function LoginPage() {
             </div>
           )}
 
+          {/* ============ FORGOT PASSWORD VIEW ============ */}
+          {showForgot ? (
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => { setShowForgot(false); setForgotMsg(null); setForgotEmail(''); }}
+                  className="p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4 text-slate-600" />
+                </button>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Reset Password</h3>
+                  <p className="text-xs text-slate-500">Masukkan email untuk menerima tautan reset</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleResetPassword} className="space-y-3.5">
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="Alamat email terdaftar"
+                    autoFocus
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
+                  />
+                </div>
+
+                {forgotMsg && (
+                  <div className={`p-3.5 rounded-xl flex items-start gap-3 ${forgotMsg.type === 'success' ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
+                    {forgotMsg.type === 'success' ? (
+                      <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    )}
+                    <p className={`text-sm ${forgotMsg.type === 'success' ? 'text-emerald-700' : 'text-red-700'}`}>{forgotMsg.text}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="w-full py-3 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
+                >
+                  {forgotLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <KeyRound className="w-4 h-4" />
+                      Kirim Tautan Reset
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          ) : (
+          /* ============ NORMAL LOGIN/REGISTER VIEW ============ */
+          <>
+          {/* Tabs */}
+          <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
+            <button
+              onClick={() => { setTab('login'); setError(''); }}
+              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                tab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Masuk
+            </button>
+            <button
+              onClick={() => { setTab('register'); setError(''); }}
+              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                tab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Daftar
+            </button>
+          </div>
+
           {/* Email/Password Form */}
           <form onSubmit={handleEmailSubmit} className="space-y-3.5">
             {tab === 'register' && (
@@ -217,6 +325,20 @@ export default function LoginPage() {
                 className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
               />
             </div>
+
+            {/* Lupa Password link — hanya tampil di tab login */}
+            {tab === 'login' && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowForgot(true); setForgotEmail(email); setForgotMsg(null); }}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+                >
+                  Lupa password?
+                </button>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -232,7 +354,12 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+          </>
+          )}
 
+          {/* Divider & Google — hanya tampil di form login/register */}
+          {!showForgot && (
+            <>
           {/* Divider */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-slate-200" />
@@ -254,6 +381,8 @@ export default function LoginPage() {
             </svg>
             <span className="text-sm font-medium text-slate-700">Masuk dengan Google</span>
           </button>
+            </>
+          )}
 
           {/* Footer text */}
           <p className="text-[10px] text-slate-400 text-center mt-8 uppercase tracking-widest lg:hidden">
