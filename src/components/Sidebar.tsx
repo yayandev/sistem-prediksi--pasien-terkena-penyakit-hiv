@@ -21,6 +21,7 @@ import {
   Shield,
   User,
   History,
+  CircleUserRound,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -41,10 +42,11 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard/prediksi', label: 'Prediksi', icon: Brain },
   { to: '/dashboard/pasien', label: 'Data Pasien', icon: Users, adminOnly: true },
   { to: '/dashboard/admin/users', label: 'Kelola Users', icon: UserCog, adminOnly: true },
-  { to: '/dashboard/evaluasi', label: 'Evaluasi Model', icon: Zap, adminOnly: true },
+  { to: '/dashboard/evaluasi', label: 'Evaluasi Model', icon: Zap },
   { to: '/dashboard/riwayat', label: 'Riwayat', icon: History },
   { to: '/dashboard/pengetahuan', label: 'Pengetahuan', icon: BookOpen },
   { to: '/dashboard/tentang', label: 'Tentang', icon: Info },
+  { to: '/dashboard/profil', label: 'Profil Saya', icon: CircleUserRound },
 ];
 
 export default function Sidebar({ open, onClose }: SidebarProps) {

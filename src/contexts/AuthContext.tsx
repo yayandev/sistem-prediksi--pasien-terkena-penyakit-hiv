@@ -19,9 +19,12 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
+  updatePassword as firebaseUpdatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../config/firebase';
 
 export type UserRole = 'admin' | 'patient';
@@ -42,6 +45,10 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   registerWithEmail: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updateProfileData: (data: Partial<Pick<UserProfile, 'displayName'>>) => Promise<void>;
+  updateUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  addPasswordToAccount: (newPassword: string) => Promise<void>;
+  hasPassword: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -120,8 +127,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserProfile(null);
   }
 
+  async function updateProfileData(data: Partial<Pick<UserProfile, 'displayName'>>) {
+    if (!user || !userProfile) throw new Error('Belum login');
+    const userRef = doc(db, 'users', user.uid);
+    await updateDoc(userRef, data);
+    setUserProfile({ ...userProfile, ...data });
+  }
+
+  async function updateUserPassword(currentPassword: string, newPassword: string) {
+    if (!user || !user.email) throw new Error('Belum login');
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    await firebaseUpdatePassword(user, newPassword);
+  }
+
+  async function addPasswordToAccount(newPassword: string) {
+    if (!user) throw new Error('Belum login');
+    await firebaseUpdatePassword(user, newPassword);
+  }
+
+  function hasPassword(): boolean {
+    if (!user) return false;
+    return user.providerData.some((p) => p.providerId === 'password');
+  }
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signInWithGoogle, signInWithEmail, registerWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, signInWithGoogle, signInWithEmail, registerWithEmail, signOut, updateProfileData, updateUserPassword, addPasswordToAccount, hasPassword }}>
       {children}
     </AuthContext.Provider>
   );

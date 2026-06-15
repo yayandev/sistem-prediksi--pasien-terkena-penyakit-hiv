@@ -3,16 +3,17 @@
  * =======
  * Root component — React Router + Firebase Auth + Sidebar Layout.
  *
- * / (public)           → LandingPage (belum login)
+ * / (public)           → LandingPage (bisa diakses kapan saja)
  * /login               → LoginPage
  * /dashboard           → Admin/Patient Dashboard (protected)
  * /dashboard/prediksi  → Multi-step wizard (all roles)
- * /dashboard/riwayat   → Patient history (patient only)
+ * /dashboard/riwayat   → Patient history (all roles)
  * /dashboard/pasien    → Patient list (admin only)
  * /dashboard/admin/users → User management (admin only)
- * /dashboard/evaluasi  → Model evaluation (admin only)
+ * /dashboard/evaluasi  → Model evaluation (all roles)
  * /dashboard/pengetahuan → Documentation (all roles)
  * /dashboard/tentang   → About (public)
+ * /dashboard/profil    → Profile (all roles)
  */
 
 import React, { useState } from 'react';
@@ -32,6 +33,7 @@ import AdminUsers from './components/AdminUsers';
 import Documentation from './components/Documentation';
 import ModelEvaluation from './components/ModelEvaluation';
 import About from './components/About';
+import Profile from './components/Profile';
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,7 +42,7 @@ function AppLayout() {
   const isAdmin = userProfile?.role === 'admin';
 
   const isLoginPage = location.pathname === '/login';
-  const isLandingPage = location.pathname === '/' && !user;
+  const isLandingPage = location.pathname === '/';
   const isFullPage = isLoginPage || isLandingPage;
 
   // Full-page: login & landing — no sidebar
@@ -84,15 +86,15 @@ function AppLayout() {
           <div className="max-w-[1200px] mx-auto">
             <Routes>
               <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
               <Route path="/dashboard" element={<ProtectedRoute>{isAdmin ? <AdminDashboard /> : <PatientDashboard />}</ProtectedRoute>} />
               <Route path="/dashboard/prediksi" element={<ProtectedRoute><Predictor /></ProtectedRoute>} />
               <Route path="/dashboard/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
               <Route path="/dashboard/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
               <Route path="/dashboard/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
-              <Route path="/dashboard/evaluasi" element={<ProtectedRoute requiredRole="admin"><ModelEvaluation /></ProtectedRoute>} />
+              <Route path="/dashboard/evaluasi" element={<ProtectedRoute><ModelEvaluation /></ProtectedRoute>} />
               <Route path="/dashboard/pengetahuan" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
               <Route path="/dashboard/tentang" element={<About />} />
+              <Route path="/dashboard/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>
