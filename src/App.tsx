@@ -16,7 +16,7 @@
  */
 
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
 import { Stethoscope, Menu, X, LogOut, User } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -67,6 +67,10 @@ function Layout() {
   }
 
   if (isLoginPage) {
+    // Sudah login? Redirect ke dashboard
+    if (user) {
+      return <Navigate to="/" replace />;
+    }
     return (
       <div className="min-h-screen bg-white font-sans text-slate-800 flex flex-col">
         <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
