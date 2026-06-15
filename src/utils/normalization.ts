@@ -122,7 +122,8 @@ export function normalizeFeatureArray(features: number[], bounds: Bounds): numbe
   return features.map((val, i) => {
     const range = bounds.max[i] - bounds.min[i];
     if (range === 0) return 0;
-    return (val - bounds.min[i]) / range;
+    const normalized = (val - bounds.min[i]) / range;
+    return Math.min(1, Math.max(0, normalized));
   });
 }
 
