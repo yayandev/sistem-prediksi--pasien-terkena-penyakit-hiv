@@ -12,7 +12,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { addPrediction } from '../lib/firestore';
-import { predict, loadTrainingData } from '../ml/runner';
+import { predict, loadTrainingData, encodeQueryForSave } from '../ml/runner';
 import { ArrowLeft, ArrowRight, Zap, Check, AlertTriangle, Database, Save, Loader2, Trash2, Info, Target, BarChart3 } from 'lucide-react';
 import PredictionProcess from './PredictionProcess';
 
@@ -47,9 +47,6 @@ const STEPS = [
   { id: 3, label: 'Gaya Hidup' },
   { id: 4, label: 'Hasil' },
 ];
-
-const GENDER_MAP: Record<string, number> = { 'Laki-laki': 0, 'Perempuan': 1 };
-const BOOL_MAP: Record<string, number> = { 'Ya': 1, 'Tidak': 0 };
 
 interface FormData {
   nama: string;
@@ -107,18 +104,18 @@ export default function Predictor() {
   function toNums(f: FormData) {
     return {
       umur: Number(f.umur) || 0,
-      jenis_kelamin: GENDER_MAP[f.jenis_kelamin] || 0,
-      kelompok_populasi: Number(f.kelompok_populasi) || 0,
-      alasan_kunjungan: Number(f.alasan_kunjungan) || 0,
-      riwayat_tes_hiv: Number(f.riwayat_tes_hiv) || 0,
-      riwayat_ims: Number(f.riwayat_ims) || 0,
+      jenis_kelamin: f.jenis_kelamin || '',
+      kelompok_populasi: f.kelompok_populasi || '',
+      alasan_kunjungan: f.alasan_kunjungan || '',
+      riwayat_tes_hiv: f.riwayat_tes_hiv || '',
+      riwayat_ims: f.riwayat_ims || '',
       jumlah_pasangan_seksual: Number(f.jumlah_pasangan_seksual) || 0,
-      penggunaan_kondom: BOOL_MAP[f.penggunaan_kondom] || 0,
-      penggunaan_napza_suntik: BOOL_MAP[f.penggunaan_napza_suntik] || 0,
-      status_pernikahan: Number(f.status_pernikahan) || 0,
+      penggunaan_kondom: f.penggunaan_kondom || '',
+      penggunaan_napza_suntik: f.penggunaan_napza_suntik || '',
+      status_pernikahan: f.status_pernikahan || '',
       usia_pertama_hubungan: belumPernah ? 25 : Number(f.usia_pertama_hubungan) || 0,
-      terapi_arv: BOOL_MAP[f.terapi_arv] || 0,
-      gejala_klinis: Number(f.gejala_klinis) || 0,
+      terapi_arv: f.terapi_arv || '',
+      gejala_klinis: f.gejala_klinis || '',
     };
   }
 
@@ -149,10 +146,13 @@ export default function Predictor() {
     if (!result || !user) return;
     setSaving(true);
     try {
+      const nums = toNums(form);
+      const encoded = encodeQueryForSave(nums);
       await addPrediction({
         patientId: '',
         nama: form.nama || 'Tanpa Nama',
-        ...toNums(form),
+        ...nums,
+        ...encoded,
         predictedClass: result.predictedClass,
         predictedLabel: result.predictedLabel,
         neighbors: result.neighbors,
@@ -259,20 +259,21 @@ export default function Predictor() {
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Status Pernikahan</label>
               <select value={form.status_pernikahan} onChange={(e) => set('status_pernikahan', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
                 <option value="">Pilih</option>
-                <option value="1">Belum Kawin</option>
-                <option value="2">Kawin</option>
-                <option value="3">Cerai</option>
+                <option value="Belum Kawin">Belum Kawin</option>
+                <option value="Kawin">Kawin</option>
+                <option value="Cerai">Cerai</option>
               </select>
             </div>
             <div className="sm:col-span-2">
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Kelompok Populasi</label>
               <select value={form.kelompok_populasi} onChange={(e) => set('kelompok_populasi', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
                 <option value="">Pilih</option>
-                <option value="0">Umum</option>
-                <option value="1">Waria</option>
-                <option value="2">ODHA</option>
-                <option value="3">Ibu Hamil</option>
-                <option value="4">WBP</option>
+                <option value="Umum">Umum</option>
+                <option value="Waria">Waria</option>
+                <option value="ODHA">ODHA</option>
+                <option value="Ibu Hamil">Ibu Hamil</option>
+                <option value="WBP">WBP</option>
+                <option value="Pekerja Seks">Pekerja Seks</option>
               </select>
             </div>
           </div>
@@ -288,18 +289,18 @@ export default function Predictor() {
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Riwayat Tes HIV</label>
               <select value={form.riwayat_tes_hiv} onChange={(e) => set('riwayat_tes_hiv', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
                 <option value="">Pilih</option>
-                <option value="0">Belum pernah</option>
-                <option value="1">Pernah (negatif)</option>
-                <option value="2">Pernah (positif)</option>
+                <option value="Belum pernah">Belum pernah</option>
+                <option value="Pernah (negatif)">Pernah (negatif)</option>
+                <option value="Pernah (positif)">Pernah (positif)</option>
               </select>
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Riwayat IMS</label>
               <select value={form.riwayat_ims} onChange={(e) => set('riwayat_ims', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
                 <option value="">Pilih</option>
-                <option value="0">Tidak ada</option>
-                <option value="1">Pernah</option>
-                <option value="2">Sedang terjadi</option>
+                <option value="Tidak ada">Tidak ada</option>
+                <option value="Pernah">Pernah</option>
+                <option value="Sedang terjadi">Sedang terjadi</option>
               </select>
             </div>
             <div>
@@ -314,10 +315,10 @@ export default function Predictor() {
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Gejala Klinis</label>
               <select value={form.gejala_klinis} onChange={(e) => set('gejala_klinis', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
                 <option value="">Pilih</option>
-                <option value="0">Tidak ada gejala</option>
-                <option value="1">Gejala ringan</option>
-                <option value="2">Gejala sedang</option>
-                <option value="3">Gejala berat</option>
+                <option value="Tidak ada gejala">Tidak ada gejala</option>
+                <option value="Gejala ringan">Gejala ringan</option>
+                <option value="Gejala sedang">Gejala sedang</option>
+                <option value="Gejala berat">Gejala berat</option>
               </select>
             </div>
           </div>
@@ -333,12 +334,13 @@ export default function Predictor() {
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Alasan Kunjungan</label>
               <select value={form.alasan_kunjungan} onChange={(e) => set('alasan_kunjungan', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
                 <option value="">Pilih</option>
-                <option value="0">Konseling</option>
-                <option value="1">Tes sukarela</option>
-                <option value="2">Kontak serumah</option>
-                <option value="3">Rujukan klinis</option>
-                <option value="4">IMS</option>
-                <option value="5">Ibu hamil</option>
+                <option value="Konseling">Konseling</option>
+                <option value="Tes sukarela">Tes sukarela</option>
+                <option value="Kontak serumah">Kontak serumah</option>
+                <option value="Rujukan klinis">Rujukan klinis</option>
+                <option value="IMS">IMS</option>
+                <option value="Ibu hamil">Ibu hamil</option>
+                <option value="Tes HIV">Tes HIV</option>
               </select>
             </div>
             <div>
@@ -351,6 +353,9 @@ export default function Predictor() {
                 <option value="">Pilih</option>
                 <option value="Ya">Ya</option>
                 <option value="Tidak">Tidak</option>
+                <option value="Selalu">Selalu</option>
+                <option value="Kadang-kadang">Kadang-kadang</option>
+                <option value="Tidak Pernah">Tidak Pernah</option>
               </select>
             </div>
             <div>
