@@ -20,7 +20,7 @@ import { runFullPreprocessing } from '../utils/preprocessing';
 // Import normalisasi dari scratch
 import { getBounds, normalizeFeatureArray, normalizeDataset, getLabels } from '../utils/normalization';
 // Import KNN custom dari scratch (BUKAN ml-knn)
-import { knnPredict } from '../utils/knn';
+import { knnPredict, knnPredictWithDetails } from '../utils/knn';
 // Import dataset MENTAH (dengan string dan null) — bukan yang sudah clean
 import rawDataset from '../data/raw_hiv_dataset.json';
 // Import icon Lucide
@@ -102,7 +102,6 @@ export default function Predictor() {
 
     // === LANGKAH 5: Simpan detail untuk ditampilkan ===
     // (Detail tetangga, voting, dan pipeline)
-    const { knnPredictWithDetails } = require('../utils/knn');
     const detail = knnPredictWithDetails(normalizedTrainingX, trainingY, normalizedInput, 3);
 
     setPredictionDetail({
