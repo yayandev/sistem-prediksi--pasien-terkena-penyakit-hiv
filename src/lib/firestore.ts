@@ -116,6 +116,16 @@ export async function deletePatient(id: string) {
   await deleteDoc(doc(db, 'patients', id));
 }
 
+/** Import data seed ke Firestore */
+export async function importSeedData(seedData: Omit<PatientData, 'id' | 'createdAt'>[], createdBy: string): Promise<number> {
+  let imported = 0;
+  for (const record of seedData) {
+    await addPatient({ ...record, createdBy });
+    imported++;
+  }
+  return imported;
+}
+
 /* ================================================================
    PREDICTIONS
    ================================================================ */

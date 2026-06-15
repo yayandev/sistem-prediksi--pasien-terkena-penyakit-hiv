@@ -18,9 +18,11 @@ import {
   Loader2,
   AlertCircle,
   Zap,
-  FileText,
+  Database,
+  CheckCircle,
 } from 'lucide-react';
-import { getDashboardStats, DashboardStats } from '../lib/firestore';
+import { getDashboardStats, DashboardStats, importSeedData } from '../lib/firestore';
+import { SEED_PATIENTS } from '../lib/seedData';
 
 const CLASS_COLORS: Record<string, string> = {
   'ODHIV': 'bg-red-500',
@@ -29,10 +31,12 @@ const CLASS_COLORS: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -47,6 +51,23 @@ export default function Dashboard() {
       setError(msg);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleImportSeed() {
+    if (!user) return;
+    setImporting(true);
+    try {
+      const count = await importSeedData(SEED_PATIENTS, user.uid);
+      setImported(true);
+      // Reload stats
+      const data = await getDashboardStats();
+      setStats(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal import data';
+      alert(msg);
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -123,6 +144,39 @@ export default function Dashboard() {
           <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-slate-900 transition-colors" />
         </NavLink>
       </div>
+
+      {/* Import Seed Data */}
+      {s.totalPatients === 0 && !imported && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center shrink-0">
+            <Database className="w-6 h-6 text-amber-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-bold text-slate-900">Belum Ada Data Pasien</h3>
+            <p className="text-xs text-slate-500 mt-1">Import 21 data seed dari jurnal untuk mulai menggunakan sistem.</p>
+          </div>
+          <button
+            onClick={handleImportSeed}
+            disabled={importing}
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
+          >
+            {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
+            {importing ? 'Mengimport...' : 'Import Data Seed'}
+          </button>
+        </div>
+      )}
+
+      {imported && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex items-center gap-4">
+          <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
+            <CheckCircle className="w-6 h-6 text-emerald-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Data Berhasil Diimport!</h3>
+            <p className="text-xs text-slate-500 mt-1">21 data seed sudah tersimpan di Firestore.</p>
+          </div>
+        </div>
+      )}
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
