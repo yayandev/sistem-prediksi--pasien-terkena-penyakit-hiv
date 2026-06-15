@@ -2,7 +2,7 @@
  * Sidebar.tsx
  * ==========
  * Sidebar navigation untuk app layout setelah login.
- * Role-based menu items + responsive (drawer on mobile).
+ * Wider, cleaner, responsive dengan drawer di mobile.
  */
 
 import React from 'react';
@@ -17,7 +17,7 @@ import {
   BookOpen,
   Info,
   LogOut,
-  ChevronLeft,
+  X,
   Shield,
   User,
   History,
@@ -39,8 +39,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/dashboard/prediksi', label: 'Prediksi', icon: Brain },
-  { to: '/dashboard/pasien', label: 'Pasien', icon: Users, adminOnly: true },
-  { to: '/dashboard/admin/users', label: 'Users', icon: UserCog, adminOnly: true },
+  { to: '/dashboard/pasien', label: 'Data Pasien', icon: Users, adminOnly: true },
+  { to: '/dashboard/admin/users', label: 'Kelola Users', icon: UserCog, adminOnly: true },
   { to: '/dashboard/evaluasi', label: 'Evaluasi Model', icon: Zap, adminOnly: true },
   { to: '/dashboard/riwayat', label: 'Riwayat', icon: History },
   { to: '/dashboard/pengetahuan', label: 'Pengetahuan', icon: BookOpen },
@@ -56,41 +56,33 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     onClose();
   }, [location.pathname]);
 
-  const filteredItems = NAV_ITEMS.filter(
-    (item) => !item.adminOnly || isAdmin,
-  );
+  const filteredItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
 
   async function handleLogout() {
-    try {
-      await signOut();
-    } catch {
-      /* silent */
-    }
+    try { await signOut(); } catch { /* silent */ }
   }
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-slate-900 text-white">
       {/* Brand */}
-      <div className="flex items-center justify-between px-5 h-16 border-b border-slate-800">
-        <NavLink to="/dashboard" className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center">
-            <Stethoscope className="w-4 h-4 text-slate-900" />
-          </div>
-          <div>
-            <div className="font-bold text-sm tracking-tight uppercase">VECTRA</div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest">HIV Predictor</div>
-          </div>
-        </NavLink>
+      <div className="flex items-center gap-3 px-5 h-[72px] border-b border-slate-800/80 shrink-0">
+        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0">
+          <Stethoscope className="w-5 h-5 text-slate-900" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-[15px] tracking-tight uppercase">VECTRA</div>
+          <div className="text-[11px] text-slate-500 tracking-wide">HIV Predictor System</div>
+        </div>
         <button
           onClick={onClose}
-          className="lg:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          className="lg:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Nav Items */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto py-5 px-4 space-y-1.5">
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isDashboard = item.to === '/dashboard';
@@ -100,26 +92,26 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               to={item.to}
               end={isDashboard}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                `flex items-center gap-3 px-3.5 py-3 text-[14px] font-medium rounded-xl transition-all duration-150 ${
                   isActive
-                    ? 'bg-white/10 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-white/10'
                 }`
               }
             >
-              <Icon className="w-4.5 h-4.5 shrink-0" />
+              <Icon className="w-5 h-5 shrink-0" />
               {item.label}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* User Info */}
-      <div className="border-t border-slate-800 p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden shrink-0">
+      {/* User Info + Logout */}
+      <div className="border-t border-slate-800/80 p-4 shrink-0">
+        <div className="flex items-center gap-3 px-1 mb-3">
+          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden shrink-0">
             {user?.photoURL ? (
-              <img src={user.photoURL} alt="" className="w-9 h-9 rounded-full" />
+              <img src={user.photoURL} alt="" className="w-10 h-10 rounded-full" />
             ) : (
               <User className="w-5 h-5 text-slate-500" />
             )}
@@ -128,9 +120,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             <div className="text-sm font-semibold truncate">
               {userProfile?.displayName || user?.displayName || user?.email?.split('@')[0]}
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-1.5 mt-1">
               {isAdmin && <Shield className="w-3 h-3 text-amber-400" />}
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${isAdmin ? 'text-amber-400' : 'text-slate-500'}`}>
+              <span className={`text-[11px] font-bold uppercase tracking-wider ${isAdmin ? 'text-amber-400' : 'text-slate-500'}`}>
                 {userProfile?.role || 'patient'}
               </span>
             </div>
@@ -138,9 +130,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
+          className="w-full flex items-center gap-3 px-3.5 py-3 text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-white/5 rounded-xl transition-colors"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-5 h-5" />
           Keluar
         </button>
       </div>
@@ -150,7 +142,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:w-[260px]">
+      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:w-[272px]">
         {sidebarContent}
       </aside>
 
@@ -158,10 +150,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       {open && (
         <>
           <div
-            className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+            className="fixed inset-0 bg-black/60 z-50 lg:hidden transition-opacity"
             onClick={onClose}
           />
-          <aside className="fixed inset-y-0 left-0 z-50 w-[260px] lg:hidden animate-in slide-in-from-left">
+          <aside className="fixed inset-y-0 left-0 z-50 w-[280px] lg:hidden shadow-2xl">
             {sidebarContent}
           </aside>
         </>

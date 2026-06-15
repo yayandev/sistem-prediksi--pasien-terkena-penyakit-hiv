@@ -112,18 +112,17 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="border-b border-slate-200 pb-6 sm:pb-8 text-center max-w-2xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-semibold mb-3 tracking-tight uppercase">
+      <div className="pb-6 sm:pb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           Dashboard
         </h1>
-        <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Ringkasan statistik sistem prediksi HIV. Data diperbarui secara
-          real-time dari Firestore.
+        <p className="text-sm text-slate-500 mt-1">
+          Ringkasan statistik sistem prediksi HIV — data real-time dari Firestore.
         </p>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Users} label="Total Pasien" value={s.totalPatients} />
         <StatCard
           icon={Brain}
@@ -140,7 +139,7 @@ export default function Dashboard() {
           icon={BarChart3}
           label="Fitur Input"
           value="13"
-          sub="Lengkap (klinis+sosial)"
+          sub="13 fitur klinis"
         />
       </div>
 
@@ -148,7 +147,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <NavLink
           to="/dashboard/prediksi"
-          className="flex items-center gap-4 p-5 bg-slate-900 text-white hover:bg-slate-800 transition-colors group"
+          className="flex items-center gap-4 p-5 bg-slate-900 text-white hover:bg-slate-800 transition-colors group rounded-2xl"
         >
           <Plus className="w-8 h-8 opacity-50 group-hover:opacity-100 transition-opacity" />
           <div className="flex-1">
@@ -163,7 +162,7 @@ export default function Dashboard() {
         </NavLink>
         <NavLink
           to="/dashboard/pasien"
-          className="flex items-center gap-4 p-5 border-2 border-slate-200 hover:border-slate-900 transition-colors group"
+          className="flex items-center gap-4 p-5 border-2 border-slate-200 hover:border-slate-900 transition-colors group rounded-2xl"
         >
           <Users className="w-8 h-8 text-slate-400 group-hover:text-slate-900 transition-colors" />
           <div className="flex-1">
@@ -178,7 +177,7 @@ export default function Dashboard() {
         </NavLink>
         <NavLink
           to="/dashboard/evaluasi"
-          className="flex items-center gap-4 p-5 border-2 border-slate-200 hover:border-slate-900 transition-colors group"
+          className="flex items-center gap-4 p-5 border-2 border-slate-200 hover:border-slate-900 transition-colors group rounded-2xl"
         >
           <Zap className="w-8 h-8 text-slate-400 group-hover:text-slate-900 transition-colors" />
           <div className="flex-1">
@@ -241,7 +240,7 @@ export default function Dashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Distribusi Kelas Pasien */}
-        <div className="bg-white border-2 border-slate-900">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div className="bg-slate-900 px-6 py-4">
             <h2 className="text-sm font-bold text-white tracking-widest uppercase">
               Distribusi Kelas Pasien
@@ -283,7 +282,7 @@ export default function Dashboard() {
         </div>
 
         {/* Distribusi Hasil Prediksi */}
-        <div className="bg-white border-2 border-slate-900">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div className="bg-slate-900 px-6 py-4">
             <h2 className="text-sm font-bold text-white tracking-widest uppercase">
               Distribusi Hasil Prediksi
@@ -328,7 +327,7 @@ export default function Dashboard() {
       </div>
 
       {/* Prediksi Terakhir */}
-      <div className="bg-white border-2 border-slate-900">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
         <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
           <h2 className="text-sm font-bold text-white tracking-widest uppercase">
             Prediksi Terakhir
@@ -418,7 +417,7 @@ function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="p-5 border border-slate-200 hover:border-slate-900 transition-colors group">
+    <div className="p-5 bg-white border border-slate-200 hover:border-slate-900 transition-colors group rounded-2xl">
       <Icon className="w-5 h-5 text-slate-400 group-hover:text-slate-900 transition-colors mb-3" />
       <div className="text-2xl font-bold text-slate-900">{value}</div>
       <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-1">

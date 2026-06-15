@@ -17,7 +17,7 @@
 
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
@@ -62,46 +62,47 @@ function AppLayout() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main area — offset by sidebar width on desktop */}
-      <div className="lg:pl-[260px]">
+      <div className="lg:pl-[272px] min-h-screen flex flex-col">
         {/* Top bar (mobile only) */}
         <header className="sticky top-0 z-40 bg-white border-b border-slate-200 lg:hidden">
-          <div className="flex items-center justify-between h-14 px-4">
+          <div className="flex items-center h-14 px-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 text-slate-600 hover:text-slate-900 transition-colors"
+              className="p-2 -ml-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="font-semibold text-sm uppercase tracking-tight">VECTRA</span>
+            <div className="flex-1 text-center">
+              <span className="font-bold text-sm uppercase tracking-tight">VECTRA</span>
+            </div>
             <div className="w-9" />
           </div>
         </header>
 
         {/* Content */}
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-          <Routes>
-            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
-            <Route path="/dashboard" element={<ProtectedRoute>{isAdmin ? <AdminDashboard /> : <PatientDashboard />}</ProtectedRoute>} />
-            <Route path="/dashboard/prediksi" element={<ProtectedRoute><Predictor /></ProtectedRoute>} />
-            <Route path="/dashboard/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
-            <Route path="/dashboard/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
-            <Route path="/dashboard/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
-            <Route path="/dashboard/evaluasi" element={<ProtectedRoute requiredRole="admin"><ModelEvaluation /></ProtectedRoute>} />
-            <Route path="/dashboard/pengetahuan" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
-            <Route path="/dashboard/tentang" element={<About />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
+          <div className="max-w-[1200px] mx-auto">
+            <Routes>
+              <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
+              <Route path="/dashboard" element={<ProtectedRoute>{isAdmin ? <AdminDashboard /> : <PatientDashboard />}</ProtectedRoute>} />
+              <Route path="/dashboard/prediksi" element={<ProtectedRoute><Predictor /></ProtectedRoute>} />
+              <Route path="/dashboard/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
+              <Route path="/dashboard/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
+              <Route path="/dashboard/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
+              <Route path="/dashboard/evaluasi" element={<ProtectedRoute requiredRole="admin"><ModelEvaluation /></ProtectedRoute>} />
+              <Route path="/dashboard/pengetahuan" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
+              <Route path="/dashboard/tentang" element={<About />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </div>
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-slate-200 py-8 sm:py-12 bg-white">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 text-sm text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
-            <span className="font-semibold uppercase tracking-widest text-[10px] sm:text-xs text-slate-400">
+        <footer className="border-t border-slate-200 py-6 bg-white">
+          <div className="px-4 sm:px-6 lg:px-8 text-center">
+            <span className="text-[11px] uppercase tracking-widest text-slate-400">
               &copy; {new Date().getFullYear()} Kelompok 5 — Universitas Banten Jaya
-            </span>
-            <span className="text-[10px] sm:text-xs uppercase tracking-widest">
-              Tugas Machine Learning &bull; Sistem Prediksi Pasien Terkena Penyakit HIV
             </span>
           </div>
         </footer>
