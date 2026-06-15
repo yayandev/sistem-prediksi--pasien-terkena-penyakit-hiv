@@ -1,15 +1,16 @@
 /**
  * runner.ts
  * =========
- * ML runner — loads training data, preprocesses it, trains KNN,
+ * ML runner — loads training data FROM FIRESTORE, preprocesses it, trains KNN,
  * and exposes predict() for the Predictor component.
  */
 
-import rawDataset from '../data/raw_hiv_dataset.json';
+import { getPatients, type PatientData } from '../lib/firestore';
 import { runFullPreprocessing } from '../utils/preprocessing';
 import { normalizeDataset, normalizeFeatureArray, getBounds, getLabels } from '../utils/normalization';
 import { smoteAllClasses } from '../utils/sMOTE';
 import { knnPredictWithDetails } from '../utils/knn';
+import type { RawDatasetRow } from '../utils/preprocessing';
 
 const CLASS_LABELS: Record<number, string> = {
   0: 'Belum Tahu',
@@ -29,22 +30,71 @@ let trainLabels: number[] = [];
 let bounds: { min: number[]; max: number[] } = { min: [], max: [] };
 let totalTrainSamples = 0;
 
+/**
+ * Convert PatientData (Firestore) → RawDatasetRow (preprocessing input).
+ * PatientData punya string values, RawDatasetRow expects nullable values.
+ */
+function patientToRawRow(p: PatientData): RawDatasetRow {
+  return {
+    umur: p.umur,
+    jenis_kelamin: p.jenis_kelamin,
+    kelompok_populasi: p.kelompok_populasi,
+    alasan_kunjungan: p.alasan_kunjungan,
+    riwayat_tes_hiv: p.riwayat_tes_hiv,
+    riwayat_ims: p.riwayat_ims,
+    jumlah_pasangan_seksual: p.jumlah_pasangan_seksual,
+    penggunaan_kondom: p.penggunaan_kondom,
+    penggunaan_napza_suntik: p.penggunaan_napza_suntik,
+    status_pernikahan: p.status_pernikahan,
+    usia_pertama_hubungan: p.usia_pertama_hubungan,
+    terapi_arv: p.terapi_arv,
+    gejala_klinis: p.gejala_klinis,
+    status_odhiv: p.status_odhiv,
+  };
+}
+
+/**
+ * Load training data dari Firestore, preprocess, dan normalisasi.
+ * Harus dipanggil sebelum predict().
+ */
 export async function loadTrainingData(): Promise<void> {
   if (isReady) return;
 
-  // 1. Preprocessing: clean → encode → full pipeline
+  // 1. Fetch patients dari Firestore
+  const patients = await getPatients();
+
+  if (patients.length === 0) {
+    throw new Error('Belum ada data pasien di Firestore. Import data seed terlebih dahulu.');
+  }
+
+  // 2. Convert ke RawDatasetRow format
+  const rawDataset: RawDatasetRow[] = patients.map(patientToRawRow);
+
+  // 3. Preprocessing: clean → encode → full pipeline
   const { encodedData } = runFullPreprocessing(rawDataset);
 
-  // 2. SMOTE — balance classes
+  // 4. SMOTE — balance classes
   const smoteData = smoteAllClasses(encodedData, 3, 42);
 
-  // 3. Normalization
+  // 5. Normalization
   bounds = getBounds(smoteData);
   normalizedTrain = normalizeDataset(smoteData, bounds);
   trainLabels = getLabels(smoteData);
   totalTrainSamples = smoteData.length;
 
   isReady = true;
+}
+
+/**
+ * Reload training data dari Firestore (misal setelah import seed / tambah pasien).
+ */
+export async function reloadTrainingData(): Promise<void> {
+  isReady = false;
+  normalizedTrain = [];
+  trainLabels = [];
+  bounds = { min: [], max: [] };
+  totalTrainSamples = 0;
+  await loadTrainingData();
 }
 
 export function getTrainingStats() {
