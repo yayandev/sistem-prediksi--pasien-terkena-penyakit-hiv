@@ -5,9 +5,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPredictionsByUser, PredictionData } from '../lib/firestore';
-import { History, Loader2, Calendar, Clock } from 'lucide-react';
+import { History, Loader2, Calendar, Clock, ChevronRight } from 'lucide-react';
 
 const CLASS_LABELS: Record<number, string> = {
   0: 'Belum Tahu',
@@ -69,27 +70,34 @@ export default function PatientHistory() {
       ) : (
         <div className="space-y-3">
           {predictions.map((p) => {
-            const isOdhiv = p.predictedClass === 1;
+            const isOdhiv = p.predictedClass === 2;
             return (
-              <div key={p.id} className="bg-white border border-slate-200 p-5 hover:border-slate-300 transition-colors">
+              <Link
+                key={p.id}
+                to={`/dashboard/riwayat/${p.id}`}
+                className="block bg-white border border-slate-200 p-5 hover:border-slate-400 hover:shadow-md transition-all group"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="font-bold text-slate-900">{p.nama}</h3>
+                    <h3 className="font-bold text-slate-900 group-hover:text-slate-700 transition-colors">{p.nama}</h3>
                     <p className="text-xs text-slate-500 mt-1">
                       {p.umur} tahun &bull; {p.jenis_kelamin === 1 ? 'Laki-laki' : 'Perempuan'}
                     </p>
                   </div>
-                  <div className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${
-                    isOdhiv ? 'bg-red-100 text-red-700' : p.predictedClass === 2 ? 'bg-slate-100 text-slate-500' : 'bg-green-100 text-green-700'
-                  }`}>
-                    {p.predictedLabel}
+                  <div className="flex items-center gap-2">
+                    <div className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${
+                      isOdhiv ? 'bg-red-100 text-red-700' : p.predictedClass === 1 ? 'bg-slate-100 text-slate-500' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {p.predictedLabel}
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
                   </div>
                 </div>
                 <div className="flex items-center gap-4 mt-3 text-[11px] text-slate-400">
                   <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {formatDate(p.createdAt)}</span>
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatTime(p.createdAt)}</span>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

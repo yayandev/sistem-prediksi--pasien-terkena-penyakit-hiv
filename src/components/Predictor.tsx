@@ -9,11 +9,12 @@
  *   Step 4: Hasil & Simpan
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { addPrediction } from '../lib/firestore';
 import { predict, loadTrainingData } from '../ml/runner';
 import { ArrowLeft, ArrowRight, Zap, Check, AlertTriangle, Database, Save, Loader2, Trash2, Info, Target, BarChart3 } from 'lucide-react';
+import PredictionProcess from './PredictionProcess';
 
 interface PredictionResult {
   predictedClass: number;
@@ -89,6 +90,7 @@ export default function Predictor() {
   const [loadingTraining, setLoadingTraining] = useState(false);
   const [belumPernah, setBelumPernah] = useState(false);
   const [selectedK, setSelectedK] = useState(3);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -127,14 +129,21 @@ export default function Predictor() {
       setError('Umur dan Jenis Kelamin wajib diisi');
       return;
     }
+    setProcessing(true);
+  }
+
+  const onProcessingComplete = useCallback(() => {
+    const nums = toNums(form);
     try {
       const pred = predict(nums, selectedK);
       setResult(pred);
+      setProcessing(false);
       setStep(4);
     } catch (err: unknown) {
+      setProcessing(false);
       setError(err instanceof Error ? err.message : 'Gagal menjalankan prediksi');
     }
-  }
+  }, [form, selectedK]);
 
   async function handleSave() {
     if (!result || !user) return;
@@ -384,6 +393,11 @@ export default function Predictor() {
         </div>
       )}
 
+      {/* Processing Animation */}
+      {processing && (
+        <PredictionProcess onComplete={onProcessingComplete} />
+      )}
+
       {/* Step 4: Hasil */}
       {step === 4 && result && (
         <div className="space-y-6">
@@ -617,7 +631,8 @@ export default function Predictor() {
         </div>
       )}
 
-      {/* Navigation Buttons */}
+      {/* Navigation Buttons — hidden during processing */}
+      {!processing && (
       <div className="flex justify-between items-center mt-8">
         <button
           onClick={() => setStep((s) => s - 1)}
@@ -652,6 +667,7 @@ export default function Predictor() {
           </button>
         )}
       </div>
+      )}
     </div>
   );
 }

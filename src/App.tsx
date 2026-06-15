@@ -29,6 +29,7 @@ import PatientDashboard from './components/PatientDashboard';
 import Predictor from './components/Predictor';
 import PatientList from './components/PatientList';
 import PatientHistory from './components/PatientHistory';
+import PredictionDetail from './components/PredictionDetail';
 import AdminUsers from './components/AdminUsers';
 import Documentation from './components/Documentation';
 import ModelEvaluation from './components/ModelEvaluation';
@@ -88,6 +89,7 @@ function AppLayout() {
               <Route path="/login" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<ProtectedRoute>{isAdmin ? <AdminDashboard /> : <PatientDashboard />}</ProtectedRoute>} />
               <Route path="/dashboard/prediksi" element={<ProtectedRoute><Predictor /></ProtectedRoute>} />
+              <Route path="/dashboard/riwayat/:id" element={<ProtectedRoute><PredictionDetail /></ProtectedRoute>} />
               <Route path="/dashboard/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
               <Route path="/dashboard/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
               <Route path="/dashboard/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />

@@ -149,6 +149,14 @@ export async function getPredictionsByUser(uid: string): Promise<PredictionData[
   return all.filter((p) => p.createdBy === uid);
 }
 
+/** Ambil satu prediksi berdasarkan ID */
+export async function getPrediction(id: string): Promise<PredictionData | null> {
+  const ref = doc(db, 'predictions', id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as PredictionData;
+}
+
 /* ================================================================
    DASHBOARD STATS
    ================================================================ */
