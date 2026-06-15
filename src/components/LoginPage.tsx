@@ -175,31 +175,11 @@ export default function LoginPage() {
           {/* Welcome text */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-              {tab === 'login' ? 'Selamat datang kembali' : 'Buat akun baru'}
+              {showForgot ? 'Reset Password' : tab === 'login' ? 'Selamat datang kembali' : 'Buat akun baru'}
             </h2>
             <p className="text-sm text-slate-500 mt-1">
-              {tab === 'login' ? 'Masuk untuk mengakses sistem prediksi.' : 'Daftar untuk mulai menggunakan VECTRA.'}
+              {showForgot ? 'Masukkan email untuk menerima tautan reset' : tab === 'login' ? 'Masuk untuk mengakses sistem prediksi.' : 'Daftar untuk mulai menggunakan VECTRA.'}
             </p>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
-            <button
-              onClick={() => { setTab('login'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                tab === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Masuk
-            </button>
-            <button
-              onClick={() => { setTab('register'); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                tab === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Daftar
-            </button>
           </div>
 
           {/* Error */}
@@ -215,18 +195,13 @@ export default function LoginPage() {
           {/* ============ FORGOT PASSWORD VIEW ============ */}
           {showForgot ? (
             <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => { setShowForgot(false); setForgotMsg(null); setForgotEmail(''); }}
-                  className="p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4 text-slate-600" />
-                </button>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Reset Password</h3>
-                  <p className="text-xs text-slate-500">Masukkan email untuk menerima tautan reset</p>
-                </div>
-              </div>
+              <button
+                onClick={() => { setShowForgot(false); setForgotMsg(null); setForgotEmail(''); }}
+                className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Kembali ke masuk
+              </button>
 
               <form onSubmit={handleResetPassword} className="space-y-3.5">
                 <div className="relative group">
