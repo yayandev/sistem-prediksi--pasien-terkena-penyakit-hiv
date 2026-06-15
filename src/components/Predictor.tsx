@@ -65,7 +65,10 @@ const EMPTY_FORM: FormData = {
 export default function Predictor() {
   const { user, userProfile } = useAuth();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<FormData>(EMPTY_FORM);
+  const [form, setForm] = useState<FormData>(() => ({
+    ...EMPTY_FORM,
+    nama: userProfile?.displayName || user?.displayName || user?.email?.split('@')[0] || '',
+  }));
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);

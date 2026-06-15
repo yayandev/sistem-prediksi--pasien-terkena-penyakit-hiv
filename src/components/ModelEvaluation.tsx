@@ -105,7 +105,7 @@ export default function ModelEvaluation() {
       <div className="border-b border-slate-200 pb-6 sm:pb-8 text-center max-w-2xl mx-auto">
         <h1 className="text-2xl sm:text-3xl font-semibold mb-3 tracking-tight uppercase">Evaluasi Model KNN</h1>
         <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Lihat gimana data diproses dari awal sampai akhir — dari data mentah sampai jadi prediksi. Setiap tahap dijelaskan beserta kode programnya.
+          Lihat gimana 200 data record dengan 13 fitur diproses dari awal sampai akhir — dari data mentah sampai jadi prediksi. Setiap tahap dijelaskan beserta kode programnya.
         </p>
       </div>
 
@@ -373,7 +373,7 @@ export default function ModelEvaluation() {
           <div className="whitespace-pre">  <span className="text-pink-400">const</span> random = <span className="text-blue-400">createSeededRandom</span>(seed);</div>
           <div className="whitespace-pre">  <span className="text-blue-400">fisherYatesShuffle</span>(shuffled, random);</div>
           <div className="whitespace-pre" />
-          <div className="whitespace-pre">  <span className="text-slate-500 italic">{'// splitIndex = floor(n × 0.8) = 18 untuk 23 data'}</span></div>
+          <div className="whitespace-pre">  <span className="text-slate-500 italic">{'// splitIndex = floor(n × 0.8) untuk data training'}</span></div>
           <div className="whitespace-pre">  <span className="text-pink-400">const</span> splitIndex = Math.<span className="text-blue-400">floor</span>(shuffled.length * (<span className="text-orange-300">1</span> - testSize));</div>
           <div className="whitespace-pre">  <span className="text-pink-400">const</span> train = shuffled.<span className="text-blue-400">slice</span>(<span className="text-orange-300">0</span>, splitIndex);</div>
           <div className="whitespace-pre">  <span className="text-pink-400">const</span> test = shuffled.<span className="text-blue-400">slice</span>(splitIndex);</div>

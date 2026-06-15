@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { BookOpen, Activity, GitCommit, ShieldCheck, Database, Layers, Code, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import { BookOpen, Activity, GitCommit, ShieldCheck, Database, Layers, Code, ArrowRight, ArrowLeft, CheckCircle, Stethoscope } from 'lucide-react';
 import { runFullPreprocessing } from '../utils/preprocessing';
 import { evaluateModel } from '../utils/evaluation';
 import rawDataset from '../data/raw_hiv_dataset.json';
@@ -165,7 +165,7 @@ function PengantarContent() {
       </p>
 
       <p className="text-base sm:text-lg">
-        VECTRA dibuat untuk membantu tenaga medis mempercepat proses klasifikasi risiko HIV. Caranya? Pakai algoritma <strong className="font-semibold text-slate-900">K-Nearest Neighbors (KNN)</strong> — salah satu algoritma paling sederhana tapi cukup akurat untuk kasus seperti ini.
+        VECTRA dibuat untuk membantu tenaga medis mempercepat proses klasifikasi risiko HIV. Caranya? Pakai algoritma <strong className="font-semibold text-slate-900">K-Nearest Neighbors (KNN)</strong> — salah satu algoritma paling sederhana tapi cukup akurat untuk kasus seperti ini. Sistem ini memproses <strong className="font-semibold text-slate-900">13 fitur input</strong> dari setiap pasien untuk menghasilkan prediksi yang lebih komprehensif.
       </p>
       
       <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden">
@@ -177,9 +177,9 @@ function PengantarContent() {
           <p>
             KNN itu prinsipnya sederhana banget: kalau kamu mau tahu seseorang masuk kategori apa, cukup lihat orang-orang yang paling mirip dengannya. Kalau mayoritas tetangga terdekatnya ODHIV, maka orang itu juga diprediksi ODHIV.
           </p>
-          <p>
-            Data yang dipakai berasal dari poli VCT (Voluntary Counselling and Testing) di RSUD Dr. Chasbullah Abdul Madjid Kota Bekasi — total 2.205 rekam medis pasien. Di sistem ini kita pakai sampel representatifnya aja (23 data) biar bisa didemonstrasikan.
-          </p>
+            <p>
+              Data yang dipakai berasal dari poli VCT (Voluntary Counselling and Testing) di RSUD Dr. Chasbullah Abdul Madjid Kota Bekasi — total 2.205 rekam medis pasien. Di sistem ini kita pakai 200 data sintetis yang dibuat berdasarkan distribusi pola data asli, dengan 13 fitur input lengkap mencakup aspek klinis, demografis, dan perilaku.
+            </p>
         </div>
       </div>
 
@@ -243,7 +243,7 @@ function PreprocessingContent() {
     <div className="space-y-6 text-slate-600 leading-relaxed font-light">
       <div className="bg-amber-50 p-5 rounded-xl border border-amber-200">
         <p className="text-sm sm:text-base text-amber-900 m-0 leading-relaxed">
-          <strong>Sebelum masuk ke tahapan:</strong> Data awal dari jurnal itu 2.205 pasien VCT. Kita pake 23 data representatif (bukan data asli, tapi polanya mirip) buat demonstration. Biar nggak ada privasi yang dilanggar.
+          <strong>Sebelum masuk ke tahapan:</strong> Data awal dari jurnal itu 2.205 pasien VCT. Kita pake 200 data sintetis yang dibuat berdasarkan distribusi pola data asli, dengan 13 fitur input lengkap. Biar nggak ada privasi yang dilanggar, tapi tetap representatif.
         </p>
       </div>
       
@@ -261,9 +261,9 @@ function PreprocessingContent() {
           Yang ini gampang: kalau ada baris yang ada data kosong (null), langsung buang aja seluruh barisnya. Di data kita, ada 2 baris yang kosong di kolom "Kelompok Populasi".
         </p>
         <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-600 space-y-1">
-          <p><strong>Input:</strong> 23 baris data mentah (masih string, ada null)</p>
-          <p><strong>Proses:</strong> Hapus baris yang ada null → 21 baris bersih</p>
-          <p><strong>Output:</strong> 21 baris tanpa missing value</p>
+          <p><strong>Input:</strong> 200 baris data mentah (masih string, ada null) — 13 fitur + 1 target</p>
+          <p><strong>Proses:</strong> Hapus baris yang ada null → baris bersih</p>
+          <p><strong>Output:</strong> Data tanpa missing value, siap di-encode</p>
         </div>
         <p className="text-xs text-slate-500 italic mt-2">
           Kenapa harus dibuang? Karena KNN nggak bisa ngitung jarak kalau salah satu fiturnya kosong. Sama kayak jurnalnya: "kolom Kelompok Populasi memiliki 5 data yang hilang."
@@ -280,9 +280,9 @@ function PreprocessingContent() {
           Nah ini yang agak tricky. Kita punya data kayak "Laki-laki", "Perempuan", "LSL", "Pengguna Napza" — semuanya teks. Tapi KNN butuh angka. Jadi kita ubah tiap teks jadi angka berurutan berdasarkan urutan alfabet.
         </p>
         <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-600 space-y-1">
-          <p><strong>Input:</strong> 21 baris bersih, masih dalam bentuk teks</p>
+          <p><strong>Input:</strong> Data bersih, masih dalam bentuk teks (13 fitur)</p>
           <p><strong>Proses:</strong> Kumpulkan nilai unik per kolom → urutkan A-Z → kasih angka 0, 1, 2, dst</p>
-          <p><strong>Output:</strong> 21 baris dengan angka (siap dihitung jaraknya)</p>
+          <p><strong>Output:</strong> 13 fitur + 1 target = 14 kolom numerik (siap dihitung jaraknya)</p>
         </div>
         <p className="text-xs text-slate-500 italic mt-2">
           Contoh: "Laki-laki" jadi 0, "Perempuan" jadi 1 (karena L di depan P). "LSL" jadi 0, "Pengguna Napza" jadi 1, dst. Sesuai jurnal: "LabelEncoder berfungsi untuk mengubah setiap nilai dalam kolom menjadi angka berurutan."
@@ -299,7 +299,7 @@ function PreprocessingContent() {
           Setelah semua jadi angka, data dibagi: 80% buat latihan (training), 20% buat tes (testing). Sebelum dibagi, data diacak dulu pakai Fisher-Yates shuffle biar nggak berurut.
         </p>
         <div className="p-3 bg-slate-50 rounded-lg text-xs text-slate-600 space-y-1">
-          <p><strong>Input:</strong> 21 data ter-encode</p>
+          <p><strong>Input:</strong> Data ter-encode (14 kolom: 13 fitur + 1 target)</p>
           <p><strong>Proses:</strong> Acak data → bagi 80% training, 20% testing</p>
           <p><strong>Output:</strong> Training untuk melatih KNN, Testing untuk mengevaluasi</p>
         </div>
@@ -342,7 +342,7 @@ function PreprocessingContent() {
           <p><strong>Output:</strong> Semua fitur bernilai antara 0 dan 1</p>
         </div>
         <p className="text-xs text-slate-500 italic mt-2">
-          Contoh: Usia 21-62 tanpa normalisasi bakal mendominasi jarak Euclidean dibanding Jenis Kelamin 0-1. Min-Max bikin mereka setara. Saya bahas lebih detail di tab "Evaluasi Model" — ada contoh perhitungannya.
+          Contoh: Usia 21-62 tanpa normalisasi bakal mendominasi jarak Euclidean dibanding fitur biner 0-1. Min-Max bikin semua 13 fitur setara. Saya bahas lebih detail di tab "Evaluasi Model" — ada contoh perhitungannya.
         </p>
       </div>
     </div>
@@ -401,17 +401,33 @@ function PerformaContent() {
       </div>
 
       <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600">
-        <strong className="text-slate-900">Yang perlu dicatat:</strong> Angka-angka ini dari data sample 23 baris. Di data asli 2.205 pasien, performanya bisa beda — tapi prinsip kerjanya tetap sama. Di tab "Evaluasi Model" kamu bisa ganti nilai K dan lihat sendiri gimana pengaruhnya ke metrik.
+        <strong className="text-slate-900">Yang perlu dicatat:</strong> Angka-angka ini dari data 200 record sintetis dengan 13 fitur. Di data asli 2.205 pasien, performanya bisa beda — tapi prinsip kerjanya tetap sama. Di tab "Evaluasi Model" kamu bisa ganti nilai K dan lihat sendiri gimana pengaruhnya ke metrik.
       </div>
     </div>
   );
 }
 
 function ReferensiContent() {
+  const features = [
+    { name: 'Umur', desc: 'Usia pasien waktu datang ke poli. Rentang produktif (15-60 tahunan) biasanya lebih relevan buat risiko HIV.', type: 'Numerik' },
+    { name: 'Jenis Kelamin', desc: 'Laki-laki atau Perempuan. Di encode jadi angka berdasarkan urutan alfabet.', type: 'Kategorikal' },
+    { name: 'Kelompok Populasi', desc: 'Golongan berisiko: Umum, Waria, ODHA, Ibu Hamil, atau WBP. Fitur ini punya korelasi kuat sama status ODHIV.', type: 'Kategorikal' },
+    { name: 'Alasan Kunjungan', desc: 'Kenapa pasien datang: Konseling, Tes sukarela, Kontak serumah, Rujukan klinis, IMS, atau Ibu hamil.', type: 'Kategorikal' },
+    { name: 'Riwayat Tes HIV', desc: 'Apakah pasien pernah melakukan tes HIV sebelumnya: Belum pernah, Pernah (negatif), atau Pernah (positif).', type: 'Kategorikal' },
+    { name: 'Riwayat IMS', desc: 'Riwayat Infeksi Menular Seksual: Tidak ada, Pernah, atau Sedang terjadi. IMS meningkatkan risiko penularan HIV.', type: 'Kategorikal' },
+    { name: 'Jumlah Pasangan Seksual', desc: 'Jumlah pasangan seksual dalam setahun terakhir. Semakin banyak, semakin tinggi risiko paparan.', type: 'Numerik' },
+    { name: 'Penggunaan Kondom', desc: 'Apakah pasien rutin menggunakan kondom: Ya atau Tidak. Penggunaan konsisten menurunkan risiko.', type: 'Biner' },
+    { name: 'Penggunaan NAPZA Suntik', desc: 'Apakah pasien menggunakan narkotika dengan jarum suntik: Ya atau Tidak. Risiko tinggi melalui darah.', type: 'Biner' },
+    { name: 'Status Pernikahan', desc: 'Status pernikahan pasien: Belum Kawin, Kawin, atau Cerai. Bisa jadi indikator pola perilaku.', type: 'Kategorikal' },
+    { name: 'Usia Pertama Hubungan', desc: 'Usia saat pertama kali melakukan hubungan seksual. Usia muda = risiko lebih tinggi karena organ belum matang.', type: 'Numerik' },
+    { name: 'Terapi ARV', desc: 'Apakah pasien sedang menjalani terapi Antiretroviral: Ya atau Tidak. ARV menunjukkan status HIV positif.', type: 'Biner' },
+    { name: 'Gejala Klinis', desc: 'Tingkat gejala yang dialami: Tidak ada gejala, Gejala ringan, Gejala sedang, atau Gejala berat.', type: 'Kategorikal' },
+  ];
+
   return (
     <div className="space-y-6 w-full max-w-full overflow-hidden">
       <p className="text-slate-600 leading-relaxed font-light text-base sm:text-lg">
-        Ini fitur-fitur yang dipakai oleh sistem. Tiap fitur punya peran masing-masing dalam prediksi risiko HIV.
+        Ini 13 fitur yang dipakai oleh sistem. Tiap fitur punya peran masing-masing dalam prediksi risiko HIV. Fitur dipilih berdasarkan relevansi klinis dengan penularan HIV.
       </p>
       
       <div className="bg-white border border-slate-200 rounded-2xl w-full shadow-sm overflow-hidden">
@@ -419,39 +435,28 @@ function ReferensiContent() {
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="py-4 px-6 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-50">#</th>
                 <th className="py-4 px-6 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-50">Fitur</th>
                 <th className="py-4 px-6 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">Penjelasan</th>
                 <th className="py-4 px-6 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest text-right">Tipe</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-5 px-6 font-semibold text-slate-900 whitespace-nowrap align-top bg-white">Umur</td>
-                <td className="py-5 px-6 text-slate-600 font-light leading-relaxed text-sm">Usia pasien waktu datang ke poli. Rentang produktif (15-60 tahunan) biasanya lebih relevan buat risiko HIV.</td>
-                <td className="py-5 px-6 align-top text-right"><span className="px-3 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-xs font-mono font-medium whitespace-nowrap">Integer</span></td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-5 px-6 font-semibold text-slate-900 whitespace-nowrap align-top bg-white">Jenis Kelamin</td>
-                <td className="py-5 px-6 text-slate-600 font-light leading-relaxed text-sm">Laki-laki atau Perempuan. Di encode jadi angka: Laki-laki=0, Perempuan=1 (urutan alfabet).</td>
-                <td className="py-5 px-6 align-top text-right"><span className="px-3 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-xs font-mono font-medium whitespace-nowrap">Kategorikal</span></td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-5 px-6 font-semibold text-slate-900 whitespace-nowrap align-top bg-white">Kelompok Populasi</td>
-                <td className="py-5 px-6 text-slate-600 font-light leading-relaxed text-sm">Golongan berisiko: LSL, Pengguna Napza, Waria, Pekerja Seks, atau Populasi Umum. Fitur ini paling banyak hubungannya sama status ODHIV.</td>
-                <td className="py-5 px-6 align-top text-right"><span className="px-3 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-xs font-mono font-medium whitespace-nowrap">Kategorikal</span></td>
-              </tr>
-              <tr className="hover:bg-slate-50/50 transition-colors">
-                <td className="py-5 px-6 font-semibold text-slate-900 whitespace-nowrap align-top bg-white">Alasan Kunjungan</td>
-                <td className="py-5 px-6 text-slate-600 font-light leading-relaxed text-sm">Kenapa pasien datang: Tes HIV, Konsultasi, Pemeriksaan Berkala, atau Rujukan PDP. Korelasinya paling kuat (-0.86) sama status ODHIV.</td>
-                <td className="py-5 px-6 align-top text-right"><span className="px-3 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-xs font-mono font-medium whitespace-nowrap">Kategorikal</span></td>
-              </tr>
+              {features.map((f, idx) => (
+                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="py-4 px-6 font-mono text-slate-400 text-xs bg-white">{idx + 1}</td>
+                  <td className="py-4 px-6 font-semibold text-slate-900 whitespace-nowrap align-top bg-white">{f.name}</td>
+                  <td className="py-4 px-6 text-slate-600 font-light leading-relaxed text-sm">{f.desc}</td>
+                  <td className="py-4 px-6 align-top text-right"><span className="px-3 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-xs font-mono font-medium whitespace-nowrap">{f.type}</span></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
       <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600">
-        <strong className="text-slate-900">Target prediksi:</strong> Status ODHIV dengan 3 kelas — (0) Belum Tahu, (1) Bukan ODHIV, (2) ODHIV. Semua fitur di atas diproses lewat pipeline preprocessing sebelum masuk ke KNN.
+        <strong className="text-slate-900">Target prediksi:</strong> Status ODHIV dengan 3 kelas — (0) Bukan ODHIV, (1) ODHIV, (2) Belum Tahu. Semua 13 fitur di atas diproses lewat pipeline preprocessing sebelum masuk ke KNN.
       </div>
     </div>
   );
@@ -477,23 +482,36 @@ function KodeContent() {
         <div className="p-5 sm:p-6 text-sm font-mono text-slate-600 space-y-1">
           <div>src/</div>
           <div className="pl-4">├── components/</div>
-          <div className="pl-8 text-slate-500">├── Predictor.tsx <span className="text-xs text-slate-400">(form input + prediksi)</span></div>
+          <div className="pl-8 text-slate-500">├── Predictor.tsx <span className="text-xs text-slate-400">(multi-step wizard, 13 fitur)</span></div>
+          <div className="pl-8 text-slate-500">├── Dashboard.tsx <span className="text-xs text-slate-400">(admin dashboard)</span></div>
+          <div className="pl-8 text-slate-500">├── PatientList.tsx <span className="text-xs text-slate-400">(CRUD pasien)</span></div>
+          <div className="pl-8 text-slate-500">├── PatientHistory.tsx <span className="text-xs text-slate-400">(riwayat prediksi pasien)</span></div>
+          <div className="pl-8 text-slate-500">├── AdminUsers.tsx <span className="text-xs text-slate-400">(kelola role user)</span></div>
           <div className="pl-8 text-slate-500">├── ModelEvaluation.tsx <span className="text-xs text-slate-400">(pipeline + evaluasi)</span></div>
           <div className="pl-8 text-slate-500">├── Documentation.tsx <span className="text-xs text-slate-400">(halaman ini)</span></div>
+          <div className="pl-8 text-slate-500">├── LoginPage.tsx <span className="text-xs text-slate-400">(email + Google auth)</span></div>
+          <div className="pl-8 text-slate-500">├── ProtectedRoute.tsx <span className="text-xs text-slate-400">(role-based guard)</span></div>
           <div className="pl-8 text-slate-500">└── About.tsx <span className="text-xs text-slate-400">(info kelompok)</span></div>
+          <div className="pl-4">├── contexts/</div>
+          <div className="pl-8 text-slate-500">└── AuthContext.tsx <span className="text-xs text-slate-400">(auth + role system)</span></div>
+          <div className="pl-4">├── ml/</div>
+          <div className="pl-8 text-slate-500">└── runner.ts <span className="text-xs text-slate-400">(real-time KNN prediction)</span></div>
           <div className="pl-4">├── utils/ <span className="text-xs text-slate-400">(semua algoritma dari scratch!)</span></div>
           <div className="pl-8 text-slate-500">├── knn.ts <span className="text-xs text-slate-400">(KNN + voting)</span></div>
           <div className="pl-8 text-slate-500">├── distance.ts <span className="text-xs text-slate-400">(Euclidean Distance)</span></div>
-          <div className="pl-8 text-slate-500">├── normalization.ts <span className="text-xs text-slate-400">(Min-Max)</span></div>
+          <div className="pl-8 text-slate-500">├── normalization.ts <span className="text-xs text-slate-400">(Min-Max, 13 fitur)</span></div>
           <div className="pl-8 text-slate-500">├── splitting.ts <span className="text-xs text-slate-400">(train/test split)</span></div>
           <div className="pl-8 text-slate-500">├── evaluation.ts <span className="text-xs text-slate-400">(confusion matrix + metrics)</span></div>
           <div className="pl-8 text-slate-500">├── validation.ts <span className="text-xs text-slate-400">(K-Fold CV + optimasi K)</span></div>
           <div className="pl-8 text-slate-500">├── sMOTE.ts <span className="text-xs text-slate-400">(SMOTE oversampling)</span></div>
           <div className="pl-8 text-slate-500">├── correlation.ts <span className="text-xs text-slate-400">(Pearson Correlation)</span></div>
           <div className="pl-8 text-slate-500">└── preprocessing.ts <span className="text-xs text-slate-400">(pipeline 5 tahap)</span></div>
+          <div className="pl-4">├── lib/</div>
+          <div className="pl-8 text-slate-500">├── firestore.ts <span className="text-xs text-slate-400">(CRUD + role management)</span></div>
+          <div className="pl-8 text-slate-500">├── seedData.ts <span className="text-xs text-slate-400">(21 seed records, 13 fitur)</span></div>
+          <div className="pl-8 text-slate-500">└── exportCSV.ts <span className="text-xs text-slate-400">(export ke CSV)</span></div>
           <div className="pl-4">└── data/</div>
-          <div className="pl-8 text-slate-500">├── raw_hiv_dataset.json <span className="text-xs text-slate-400">(data mentah, string + null)</span></div>
-          <div className="pl-8 text-slate-500">└── hiv_dataset.json <span className="text-xs text-slate-400">(data numeric)</span></div>
+          <div className="pl-8 text-slate-500">└── raw_hiv_dataset.json <span className="text-xs text-slate-400">(200 data, 13 fitur + target)</span></div>
         </div>
       </div>
 
