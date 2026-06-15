@@ -6,11 +6,13 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Stethoscope, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const { signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,6 +21,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithGoogle();
+      navigate('/', { replace: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Gagal login. Coba lagi.';
       setError(message);
