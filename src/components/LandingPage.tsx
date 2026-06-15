@@ -73,31 +73,59 @@ function Target({ className }: { className?: string }) {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
+      {/* Structured Data (JSON-LD) for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "VECTRA — Sistem Prediksi Pasien Terkena Penyakit HIV",
+            "description": "Platform machine learning untuk prediksi risiko HIV menggunakan algoritma K-Nearest Neighbors (KNN) dari scratch. 13 fitur klinis, 200 data training.",
+            "url": "https://sistem-prediksi-hiv.vercel.app/",
+            "breadcrumb": {
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Beranda", "item": "https://sistem-prediksi-hiv.vercel.app/" },
+                { "@type": "ListItem", "position": 2, "name": "Dashboard", "item": "https://sistem-prediksi-hiv.vercel.app/dashboard" }
+              ]
+            },
+            "mainEntity": {
+              "@type": "SoftwareApplication",
+              "name": "VECTRA",
+              "applicationCategory": "MedicalApplication",
+              "operatingSystem": "Web Browser",
+              "offers": { "@type": "Offer", "price": "0", "priceCurrency": "IDR" }
+            }
+          })
+        }}
+      />
+
       {/* ============ NAVBAR ============ */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
+      <nav aria-label="Navigasi utama" className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <a href="/" className="flex items-center gap-2.5" aria-label="VECTRA - Beranda">
             <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center">
-              <Stethoscope className="w-5 h-5 text-white" />
+              <Stethoscope className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
             <span className="font-bold text-lg tracking-tight">VECTRA</span>
-          </div>
+          </a>
           <div className="flex items-center gap-3">
             <NavLink to="/login" className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
               Masuk
             </NavLink>
             <NavLink to="/login" className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-full hover:bg-slate-800 transition-all hover:shadow-lg hover:shadow-slate-900/20 active:scale-95">
               Mulai Sekarang
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </NavLink>
           </div>
         </div>
       </nav>
 
       {/* ============ HERO ============ */}
-      <section className="relative overflow-hidden">
+      <header className="relative overflow-hidden" role="banner">
         {/* Background decoration */}
-        <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 -z-10" aria-hidden="true">
           <div className="absolute top-20 left-1/4 w-96 h-96 bg-slate-900/5 rounded-full blur-3xl" />
           <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-slate-900/3 rounded-full blur-3xl" />
           <div className="absolute top-40 right-10 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
@@ -107,7 +135,7 @@ export default function LandingPage() {
           <div className="text-center max-w-4xl mx-auto">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full text-xs font-semibold text-slate-600 uppercase tracking-widest mb-8 animate-fade-in">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
               Tugas Machine Learning — Universitas Banten Jaya
             </div>
 
@@ -117,7 +145,7 @@ export default function LandingPage() {
               <br />
               <span className="relative inline-block">
                 Pasien Terkena
-                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
+                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none" aria-hidden="true">
                   <path d="M2 8C50 2 100 2 150 6C200 10 250 4 298 8" stroke="currentColor" strokeWidth="3" className="text-slate-900" strokeLinecap="round" />
                 </svg>
               </span>
@@ -132,33 +160,33 @@ export default function LandingPage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <NavLink to="/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all hover:shadow-xl hover:shadow-slate-900/20 hover:-translate-y-0.5 active:scale-[0.98] text-base">
-                <Stethoscope className="w-5 h-5" />
+                <Stethoscope className="w-5 h-5" aria-hidden="true" />
                 Mulai Prediksi
               </NavLink>
-              <NavLink to="/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 border-2 border-slate-300 text-slate-700 font-bold rounded-2xl hover:border-slate-900 hover:bg-slate-50 transition-all text-base">
+              <a href="#fitur" className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 border-2 border-slate-300 text-slate-700 font-bold rounded-2xl hover:border-slate-900 hover:bg-slate-50 transition-all text-base">
                 Pelajari Lebih Lanjut
-              </NavLink>
+              </a>
             </div>
 
             {/* Trust badges */}
             <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-xs text-slate-400">
-              <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> 200 Data Training</div>
-              <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> 13 Fitur Klinis</div>
-              <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> 100% Client-Side</div>
-              <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Open Source</div>
+              <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /> 200 Data Training</div>
+              <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /> 13 Fitur Klinis</div>
+              <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /> 100% Client-Side</div>
+              <div className="flex items-center gap-1.5"><CheckCircle className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" /> Open Source</div>
             </div>
           </div>
         </div>
-      </section>
+      </header>
 
       {/* ============ STATS ============ */}
-      <section className="py-16 sm:py-20 border-y border-slate-200 bg-slate-50">
+      <section className="py-16 sm:py-20 border-y border-slate-200 bg-slate-50" aria-label="Statistik sistem">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {STATS.map((stat, i) => (
               <div key={i} className="text-center group">
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-white border border-slate-200 rounded-2xl mb-4 group-hover:scale-110 transition-transform">
-                  <stat.icon className="w-5 h-5 text-slate-600" />
+                  <stat.icon className="w-5 h-5 text-slate-600" aria-hidden="true" />
                 </div>
                 <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">{stat.value}</div>
                 <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-1">{stat.label}</div>
@@ -169,13 +197,13 @@ export default function LandingPage() {
       </section>
 
       {/* ============ FEATURES ============ */}
-      <section className="py-20 sm:py-28">
+      <section id="fitur" className="py-20 sm:py-28 scroll-mt-20" aria-labelledby="features-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">
               Fitur Utama
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">
+            <h2 id="features-heading" className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">
               Kenapa VECTRA?
             </h2>
             <p className="text-base sm:text-lg text-slate-500 leading-relaxed">
@@ -185,26 +213,26 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {FEATURES.map((f, i) => (
-              <div key={i} className="group p-6 sm:p-8 bg-white border border-slate-200 rounded-3xl hover:border-slate-900 hover:shadow-xl hover:shadow-slate-900/5 transition-all duration-300 hover:-translate-y-1">
+              <article key={i} className="group p-6 sm:p-8 bg-white border border-slate-200 rounded-3xl hover:border-slate-900 hover:shadow-xl hover:shadow-slate-900/5 transition-all duration-300 hover:-translate-y-1">
                 <div className={`w-12 h-12 ${f.color} rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                  <f.icon className="w-6 h-6" />
+                  <f.icon className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">{f.title}</h3>
                 <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
-              </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
       {/* ============ HOW IT WORKS ============ */}
-      <section className="py-20 sm:py-28 bg-slate-900 text-white">
+      <section className="py-20 sm:py-28 bg-slate-900 text-white" aria-labelledby="how-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold text-white/60 uppercase tracking-widest mb-4">
               Cara Kerja
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mb-4">
+            <h2 id="how-heading" className="text-3xl sm:text-4xl font-black tracking-tight mb-4">
               3 Langkah Sederhana
             </h2>
             <p className="text-base sm:text-lg text-slate-400 leading-relaxed">
@@ -215,9 +243,9 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {STEPS.map((step, i) => (
               <div key={i} className="relative group">
-                {i < 2 && <div className="hidden md:block absolute top-12 left-[calc(50%+60px)] right-[calc(-50%+60px)] h-px bg-white/10" />}
+                {i < 2 && <div className="hidden md:block absolute top-12 left-[calc(50%+60px)] right-[calc(-50%+60px)] h-px bg-white/10" aria-hidden="true" />}
                 <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 text-center hover:bg-white/10 transition-colors">
-                  <div className="text-5xl font-black text-white/10 mb-4">{step.num}</div>
+                  <div className="text-5xl font-black text-white/10 mb-4" aria-hidden="true">{step.num}</div>
                   <h3 className="text-lg font-bold mb-2">{step.title}</h3>
                   <p className="text-sm text-slate-400 leading-relaxed">{step.desc}</p>
                 </div>
@@ -228,14 +256,14 @@ export default function LandingPage() {
       </section>
 
       {/* ============ DATASET INFO ============ */}
-      <section className="py-20 sm:py-28">
+      <section className="py-20 sm:py-28" aria-labelledby="dataset-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">
                 Dataset
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-6">
+              <h2 id="dataset-heading" className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-6">
                 200 Data Training
                 <br />
                 <span className="text-slate-400">13 Fitur Klinis</span>
@@ -243,20 +271,20 @@ export default function LandingPage() {
               <p className="text-base text-slate-500 leading-relaxed mb-6">
                 Data berasal dari poli VCT RSUD Dr. Chasbullah Abdul Madjid Kota Bekasi (2.205 rekam medis). Kita buat 200 data sintetis berdasarkan distribusi pola asli dengan 13 fitur lengkap.
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                {['Umur', 'Jenis Kelamin', 'Kelompok Populasi', 'Alasan Kunjungan', 'Riwayat Tes HIV', 'Riwayat IMS', 'Jumlah Pasangan', 'Penggunaan Kondom', 'NAPZA Suntik', 'Status Pernikahan', 'Usia Pertama Hub.', 'Terapi ARV', 'Gejala Klinis'].map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-slate-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+              <ul className="grid grid-cols-2 gap-3">
+                {['Umur', 'Jenis Kelamin', 'Kelompok Populasi', 'Alasan Kunjungan', 'Riwayat Tes HIV', 'Riwayat IMS', 'Jumlah Pasangan', 'Penggunaan Kondom', 'NAPZA Suntik', 'Status Pernikahan', 'Usia Pertama Hubungan', 'Terapi ARV', 'Gejala Klinis'].map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-900" aria-hidden="true" />
                     {f}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
             {/* Visual cards */}
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 text-white">
-                <Activity className="w-8 h-8 text-white/30 mb-4" />
+                <Activity className="w-8 h-8 text-white/30 mb-4" aria-hidden="true" />
                 <div className="text-3xl font-black mb-1">KNN</div>
                 <div className="text-sm text-white/50">K-Nearest Neighbors — K=3</div>
                 <div className="mt-4 flex gap-2">
@@ -278,23 +306,23 @@ export default function LandingPage() {
       </section>
 
       {/* ============ CTA ============ */}
-      <section className="py-20 sm:py-28">
+      <section className="py-20 sm:py-28" aria-labelledby="cta-heading">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative bg-slate-900 rounded-[2rem] p-10 sm:p-16 text-center overflow-hidden">
             {/* Decorations */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" aria-hidden="true" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" aria-hidden="true" />
 
             <div className="relative z-10">
-              <Heart className="w-10 h-10 text-rose-400 mx-auto mb-6" />
-              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4">
+              <Heart className="w-10 h-10 text-rose-400 mx-auto mb-6" aria-hidden="true" />
+              <h2 id="cta-heading" className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-4">
                 Siap Membantu?
               </h2>
               <p className="text-base sm:text-lg text-slate-400 max-w-xl mx-auto mb-8 leading-relaxed">
                 Mulai gunakan VECTRA untuk memprediksi risiko HIV dengan lebih cepat dan akurat.
               </p>
               <NavLink to="/login" className="inline-flex items-center gap-2.5 px-8 py-4 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-100 transition-all hover:shadow-xl hover:shadow-black/10 active:scale-[0.98] text-base">
-                <Stethoscope className="w-5 h-5" />
+                <Stethoscope className="w-5 h-5" aria-hidden="true" />
                 Masuk ke Sistem
               </NavLink>
             </div>
@@ -303,17 +331,17 @@ export default function LandingPage() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="border-t border-slate-200 py-8 sm:py-12">
+      <footer className="border-t border-slate-200 py-8 sm:py-12" role="contentinfo">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-2.5">
+          <a href="/" className="flex items-center gap-2.5" aria-label="VECTRA - Beranda">
             <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
-              <Stethoscope className="w-4 h-4 text-white" />
+              <Stethoscope className="w-4 h-4 text-white" aria-hidden="true" />
             </div>
             <span className="font-bold text-sm tracking-tight">VECTRA</span>
-          </div>
-          <div className="text-xs text-slate-400">
+          </a>
+          <p className="text-xs text-slate-400">
             &copy; {new Date().getFullYear()} Kelompok 5 — Universitas Banten Jaya &bull; Tugas Machine Learning
-          </div>
+          </p>
         </div>
       </footer>
     </div>
