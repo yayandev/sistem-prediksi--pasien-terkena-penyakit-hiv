@@ -14,6 +14,8 @@ import {
   Loader2,
   AlertCircle,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   PatientData,
@@ -33,6 +35,8 @@ export default function PatientList() {
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     loadPatients();
@@ -79,6 +83,16 @@ export default function PatientList() {
       p.kelompok_populasi.toLowerCase().includes(search.toLowerCase()) ||
       p.status_odhiv.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Reset ke halaman 1 jika search berubah
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const paginated = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div className="space-y-6">
@@ -181,9 +195,9 @@ export default function PatientList() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p, idx) => (
+                {paginated.map((p, idx) => (
                   <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-slate-400 font-mono text-xs">{idx + 1}</td>
+                    <td className="px-6 py-4 text-slate-400 font-mono text-xs">{startIndex + idx + 1}</td>
                     <td className="px-6 py-4 font-semibold text-slate-900">{p.nama}</td>
                     <td className="px-6 py-4 text-slate-600">{p.umur}</td>
                     <td className="px-6 py-4 text-slate-600">{p.jenis_kelamin}</td>
@@ -221,6 +235,60 @@ export default function PatientList() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && filtered.length > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-500">
+            Menampilkan {startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, filtered.length)} dari {filtered.length} data
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={safeCurrentPage === 1}
+              className="p-2 border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((page) => {
+                if (totalPages <= 5) return true;
+                if (page === 1 || page === totalPages) return true;
+                if (Math.abs(page - safeCurrentPage) <= 1) return true;
+                return false;
+              })
+              .reduce<(number | 'dots')[]>((acc, page, i, arr) => {
+                if (i > 0 && page - (arr[i - 1] as number) > 1) acc.push('dots');
+                acc.push(page);
+                return acc;
+              }, [])
+              .map((item, i) =>
+                item === 'dots' ? (
+                  <span key={`dots-${i}`} className="px-1 text-slate-400">…</span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setCurrentPage(item)}
+                    className={`w-9 h-9 text-sm font-medium transition-colors ${
+                      safeCurrentPage === item
+                        ? 'bg-slate-900 text-white'
+                        : 'border border-slate-300 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safeCurrentPage === totalPages}
+              className="p-2 border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add Patient Modal */}
       {showAddModal && (
