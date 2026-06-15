@@ -75,6 +75,7 @@ export default function Predictor() {
   const [saved, setSaved] = useState(false);
   const [trainingDataLoaded, setTrainingDataLoaded] = useState(false);
   const [loadingTraining, setLoadingTraining] = useState(false);
+  const [belumPernah, setBelumPernah] = useState(false);
 
   useEffect(() => {
     async function init() {
@@ -100,7 +101,7 @@ export default function Predictor() {
       penggunaan_kondom: BOOL_MAP[f.penggunaan_kondom] || 0,
       penggunaan_napza_suntik: BOOL_MAP[f.penggunaan_napza_suntik] || 0,
       status_pernikahan: Number(f.status_pernikahan) || 0,
-      usia_pertama_hubungan: Number(f.usia_pertama_hubungan) || 0,
+      usia_pertama_hubungan: belumPernah ? 0 : Number(f.usia_pertama_hubungan) || 0,
       terapi_arv: BOOL_MAP[f.terapi_arv] || 0,
       gejala_klinis: Number(f.gejala_klinis) || 0,
     };
@@ -150,6 +151,7 @@ export default function Predictor() {
     setSaved(false);
     setError('');
     setStep(1);
+    setBelumPernah(false);
   }
 
   const canNext = () => {
@@ -339,7 +341,31 @@ export default function Predictor() {
             </div>
             <div className="sm:col-span-2">
               <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Usia Pertama Hubungan Seksual</label>
-              <input type="number" value={form.usia_pertama_hubungan} onChange={(e) => set('usia_pertama_hubungan', e.target.value)} placeholder="10-30" className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors" />
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={belumPernah}
+                    onChange={(e) => {
+                      setBelumPernah(e.target.checked);
+                      if (e.target.checked) set('usia_pertama_hubungan', '0');
+                    }}
+                    className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                  />
+                  <span className="text-sm text-slate-600">Belum pernah berhubungan seksual</span>
+                </label>
+                {!belumPernah && (
+                  <input
+                    type="number"
+                    value={form.usia_pertama_hubungan}
+                    onChange={(e) => set('usia_pertama_hubungan', e.target.value)}
+                    placeholder="10-30"
+                    min={10}
+                    max={30}
+                    className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors"
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
