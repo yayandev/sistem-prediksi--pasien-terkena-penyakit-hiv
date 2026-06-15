@@ -186,7 +186,7 @@ export function runFullPreprocessing(rawData: RawDatasetRow[]): {
 
   return {
     cleanedData,
-    encodedData: encoded,
+    encodedData: smoteData,
     encodingMaps: maps,
     report,
   };

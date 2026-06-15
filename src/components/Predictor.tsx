@@ -23,9 +23,9 @@ interface PredictionResult {
 }
 
 const CLASS_LABELS: Record<number, string> = {
-  0: 'Bukan ODHIV',
-  1: 'ODHIV',
-  2: 'Belum Tahu',
+  0: 'Belum Tahu',
+  1: 'Bukan ODHIV',
+  2: 'ODHIV',
 };
 
 const STEPS = [
@@ -35,7 +35,7 @@ const STEPS = [
   { id: 4, label: 'Hasil' },
 ];
 
-const GENDER_MAP: Record<string, number> = { 'Laki-laki': 1, 'Perempuan': 2 };
+const GENDER_MAP: Record<string, number> = { 'Laki-laki': 0, 'Perempuan': 1 };
 const BOOL_MAP: Record<string, number> = { 'Ya': 1, 'Tidak': 0 };
 
 interface FormData {

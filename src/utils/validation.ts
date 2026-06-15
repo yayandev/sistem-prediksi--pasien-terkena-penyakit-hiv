@@ -31,6 +31,7 @@ import type { DatasetRow } from './normalization';
 import { normalizeDataset, getLabels, getBounds, normalizeFeatureArray } from './normalization';
 import { knnPredict } from './knn';
 import { computeConfusionMatrix, computeMetrics } from './evaluation';
+import { smoteAllClasses } from './sMOTE';
 
 /**
  * Tipe data untuk satu fold dalam cross-validation.
@@ -170,10 +171,14 @@ export function kFoldCrossValidation(
       }
     }
 
+    // Apply SMOTE ke data training saja (bukan testing!)
+    const smoteTrainFold = smoteAllClasses(trainFold, 3, seed);
+
     // Normalisasi data
-    const bounds = getBounds(trainFold);
-    const normalizedTrainX = normalizeDataset(trainFold, bounds);
-    const trainY = getLabels(trainFold);
+    // Bounds dihitung dari data training SETELAH SMOTE
+    const bounds = getBounds(smoteTrainFold);
+    const normalizedTrainX = normalizeDataset(smoteTrainFold, bounds);
+    const trainY = getLabels(smoteTrainFold);
 
     const normalizedTestX = normalizeDataset(testFold, bounds);
     const testY = getLabels(testFold);

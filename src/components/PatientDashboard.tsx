@@ -15,9 +15,9 @@ import {
 } from 'lucide-react';
 
 const CLASS_LABELS: Record<number, string> = {
-  0: 'Bukan ODHIV',
-  1: 'ODHIV',
-  2: 'Belum Tahu',
+  0: 'Belum Tahu',
+  1: 'Bukan ODHIV',
+  2: 'ODHIV',
 };
 
 const TIPS = [

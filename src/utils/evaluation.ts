@@ -35,6 +35,7 @@
 import { knnPredict } from './knn';
 import { normalizeDataset, getLabels, getBounds, normalizeFeatureArray } from './normalization';
 import { trainTestSplit } from './splitting';
+import { smoteAllClasses } from './sMOTE';
 import type { DatasetRow } from './normalization';
 
 /**
@@ -249,17 +250,21 @@ export function evaluateModel(
   // LANGKAH 1: Split dataset menjadi training dan testing
   const { train, test } = trainTestSplit(dataset, 0.2, seed);
 
-  // LANGKAH 2: Normalisasi data
-  // Bounds dihitung dari data TRAINING saja (bukan testing!)
-  const bounds = getBounds(train);
-  const normalizedTrainX = normalizeDataset(train, bounds);
-  const trainY = getLabels(train);
+  // LANGKAH 2: Apply SMOTE ke data training saja (bukan testing!)
+  // SMOTE menyeimbangkan kelas minoritas dengan data sintetis
+  const smoteTrain = smoteAllClasses(train, 3, seed);
+
+  // LANGKAH 3: Normalisasi data
+  // Bounds dihitung dari data training SETELAH SMOTE
+  const bounds = getBounds(smoteTrain);
+  const normalizedTrainX = normalizeDataset(smoteTrain, bounds);
+  const trainY = getLabels(smoteTrain);
 
   // Data testing dinormalisasi dengan bounds dari training
   const normalizedTestX = normalizeDataset(test, bounds);
   const testY = getLabels(test);
 
-  // LANGKAH 3 & 4: Prediksi setiap data testing menggunakan KNN
+  // LANGKAH 4: Prediksi setiap data testing menggunakan KNN
   const predictions: number[] = [];
   for (const query of normalizedTestX) {
     const pred = knnPredict(normalizedTrainX, trainY, query, k);
