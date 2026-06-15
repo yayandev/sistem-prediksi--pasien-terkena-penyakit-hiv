@@ -19,7 +19,9 @@ import { runFullPreprocessing } from '../utils/preprocessing';
 import { getBounds, normalizeFeatureArray, normalizeDataset, getLabels } from '../utils/normalization';
 import { knnPredict, knnPredictWithDetails } from '../utils/knn';
 import rawDataset from '../data/raw_hiv_dataset.json';
-import { AlertCircle, FileText, CheckCircle2, Info, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { addPrediction } from '../lib/firestore';
+import { useAuth } from '../contexts/AuthContext';
+import { AlertCircle, FileText, CheckCircle2, Info, ArrowRight, ChevronDown, ChevronUp, Save, Loader2 } from 'lucide-react';
 
 /** Nama kelas target */
 const CLASS_NAMES: Record<number, string> = {
@@ -29,6 +31,8 @@ const CLASS_NAMES: Record<number, string> = {
 };
 
 export default function Predictor() {
+  const { user } = useAuth();
+  const [nama, setNama] = useState<string>('');
   const [umur, setUmur] = useState<string>('');
   const [jenisKelamin, setJenisKelamin] = useState<string>('Laki-laki');
   const [kelompokPopulasi, setKelompokPopulasi] = useState<string>('Populasi Umum');
@@ -40,6 +44,8 @@ export default function Predictor() {
     pipeline: { raw: string[]; encoded: number[]; normalized: number[] };
   } | null>(null);
   const [showPipelineDetail, setShowPipelineDetail] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const { cleanedData, encodedData, encodingMaps } = useMemo(() => {
     return runFullPreprocessing(rawDataset);
@@ -82,6 +88,36 @@ export default function Predictor() {
 
     setPrediction(result);
   };
+
+  /** Simpan hasil prediksi ke Firestore */
+  async function handleSavePrediction() {
+    if (!predictionDetail || prediction === null || !nama.trim()) return;
+    setSaving(true);
+    try {
+      await addPrediction({
+        nama: nama.trim(),
+        umur: parseInt(umur, 10),
+        jenis_kelamin: jenisKelamin,
+        kelompok_populasi: kelompokPopulasi,
+        alasan_kunjungan: alasanKunjungan,
+        predictedClass: prediction,
+        predictedLabel: CLASS_NAMES[prediction],
+        neighbors: predictionDetail.neighbors.map((n, i) => ({
+          label: n.label,
+          distance: n.distance,
+          rank: i + 1,
+        })),
+        votes: predictionDetail.voting,
+        createdBy: user?.uid || '',
+      });
+      setSaved(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal menyimpan';
+      alert(msg);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   // Hitung total suara
   const totalVotes: number = predictionDetail
@@ -175,6 +211,23 @@ export default function Predictor() {
 
           <form onSubmit={handlePredict} className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+              {/* Input Nama */}
+              <div className="space-y-2">
+                <label htmlFor="nama" className="block text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                  Nama Pasien
+                </label>
+                <p className="text-[11px] text-slate-500 -mt-1">Nama lengkap untuk identifikasi prediksi.</p>
+                <input
+                  id="nama"
+                  type="text"
+                  value={nama}
+                  onChange={(e) => setNama(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border-b-2 border-slate-200 focus:border-slate-900 bg-slate-50 focus:bg-white outline-none transition-colors text-slate-900"
+                  placeholder="Masukkan nama pasien"
+                />
+              </div>
+
               {/* Input Usia */}
               <div className="space-y-2">
                 <label htmlFor="umur" className="block text-sm font-semibold text-slate-900 uppercase tracking-wide">
@@ -468,6 +521,36 @@ export default function Predictor() {
                 <strong className="block mb-1">Catatan Penting:</strong>
                 Hasil prediksi di atas bukan diagnosis medis. Sistem ini dibuat untuk edukasi — menunjukkan bagaimana KNN bekerja dalam konteks kesehatan. Akurasi model ini adalah {((predictionDetail.voting[prediction as unknown as number] as number || 0) / totalVotes * 100).toFixed(0)}% berdasarkan voting tetangga. Untuk diagnosis yang akurat, silakan lakukan tes HIV di fasyankes (ELISA / Western Blot) dan konsultasi dengan dokter yang kompeten.
               </div>
+
+              {/* Simpan Hasil */}
+              {user && (
+                <div className="flex items-center gap-3">
+                  {saved ? (
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Tersimpan ke database
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleSavePrediction}
+                      disabled={saving || !nama.trim()}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Menyimpan...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Simpan Hasil Prediksi
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
