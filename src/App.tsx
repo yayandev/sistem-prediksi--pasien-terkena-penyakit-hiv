@@ -3,9 +3,17 @@
  * =======
  * Root component — React Router + Firebase Auth + Role-based routing.
  *
- * Admin routes:  /, /pasien, /admin/users, /evaluasi
- * Patient routes: /prediksi, /riwayat, /pengetahuan, /tentang
- * Public: /login, /tentang
+ * / (public)    → LandingPage (belum login)
+ * / (admin)     → Dashboard admin (stats, charts, CRUD)
+ * / (patient)   → Dashboard pasien (quick actions, riwayat, tips)
+ * /login        → LoginPage
+ * /prediksi     → Multi-step wizard (all roles)
+ * /riwayat      → Patient history (patient only)
+ * /pasien       → Patient list (admin only)
+ * /admin/users  → User management (admin only)
+ * /evaluasi     → Model evaluation (admin only)
+ * /pengetahuan  → Documentation (all roles)
+ * /tentang      → About (public)
  */
 
 import React, { useState } from 'react';
@@ -13,8 +21,10 @@ import { BrowserRouter, Routes, Route, NavLink, useLocation, Navigate } from 're
 import { Stethoscope, Menu, X, LogOut, User, Shield } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
-import Dashboard from './components/Dashboard';
+import AdminDashboard from './components/Dashboard';
+import PatientDashboard from './components/PatientDashboard';
 import Predictor from './components/Predictor';
 import PatientList from './components/PatientList';
 import PatientHistory from './components/PatientHistory';
@@ -33,7 +43,11 @@ function Layout() {
   }, [location.pathname]);
 
   const isLoginPage = location.pathname === '/login';
+  const isLandingPage = location.pathname === '/' && !user;
   const isAdmin = userProfile?.role === 'admin';
+
+  // Full-page layouts (no header/footer)
+  const fullPage = isLoginPage || isLandingPage;
 
   // Nav items berdasarkan role
   const navItems = user
@@ -48,39 +62,41 @@ function Layout() {
           { to: '/tentang', label: 'Tentang' },
         ]
       : [
+          { to: '/', label: 'Beranda' },
           { to: '/prediksi', label: 'Prediksi' },
           { to: '/riwayat', label: 'Riwayat' },
           { to: '/pengetahuan', label: 'Pengetahuan' },
           { to: '/tentang', label: 'Tentang' },
         ]
-    : [{ to: '/tentang', label: 'Tentang' }];
+    : [];
 
   async function handleLogout() {
     try { await signOut(); } catch { /* silent */ }
   }
 
-  // Login page layout (tanpa header/footer)
-  if (isLoginPage) {
-    if (user) return <Navigate to="/" replace />;
+  // Full-page: login & landing
+  if (fullPage) {
+    if (isLoginPage && user) return <Navigate to="/" replace />;
     return (
-      <div className="min-h-screen bg-white font-sans text-slate-800 flex flex-col">
-        <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="*" element={<LoginPage />} />
-          </Routes>
-        </main>
+      <div className="min-h-screen bg-white font-sans text-slate-800">
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<LandingPage />} />
+        </Routes>
       </div>
     );
   }
 
+  // App layout (with header/footer)
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 flex flex-col">
       {/* Header */}
       <header className="border-b border-slate-300 sticky top-0 z-50 w-full bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           <NavLink to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <Stethoscope className="w-5 h-5 text-slate-700" />
+            <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
+              <Stethoscope className="w-4 h-4 text-white" />
+            </div>
             <span className="font-semibold text-base sm:text-lg tracking-tight uppercase">VECTRA</span>
           </NavLink>
 
@@ -163,8 +179,8 @@ function Layout() {
       {/* Main Content */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<ProtectedRoute>{isAdmin ? <AdminDashboard /> : <PatientDashboard />}</ProtectedRoute>} />
           <Route path="/prediksi" element={<ProtectedRoute><Predictor /></ProtectedRoute>} />
           <Route path="/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
           <Route path="/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
