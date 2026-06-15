@@ -207,28 +207,87 @@ function PreprocessingContent() {
       </div>
       
       <p className="text-base sm:text-lg">
-        Sebelum konstruksi instrumen penalaran komputasional, sistem mereduksi dimensi data mentah agar menjadi matriks klasifikasi biner. Analisis memfilter dataset tersebut dengan tahapan intensif:
+        Sistem menerapkan <strong>5 tahap preprocessing</strong> sesuai metodologi jurnal (hal. 128-130). Setiap tahap memiliki input, proses, dan output yang jelas:
       </p>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 sm:p-8 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-6 text-indigo-600 font-bold font-mono text-lg">
-            A
-          </div>
-          <h5 className="font-bold text-slate-900 mb-3 text-lg leading-tight">Data Cleaning & Labeling</h5>
-          <p className="text-slate-600 font-light text-sm sm:text-base leading-relaxed flex-1">
-            Eliminasi nilai kosong dan transformasi kategorikal string menjadi variabel ordinal. Membatasi dimensi matriks hanya pada fitur korelatif yang tinggi: Usia, Jenis Kelamin, Kelompok Populasi, dan Alasan Kunjungan.
-          </p>
+      {/* Tahap 1: Data Cleaning */}
+      <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 font-bold font-mono">1</div>
+          <h5 className="font-bold text-slate-900 text-lg">Data Cleaning</h5>
         </div>
-        <div className="p-6 sm:p-8 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
-          <div className="w-12 h-12 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center mb-6 text-rose-600 font-bold font-mono text-lg">
-            B
-          </div>
-          <h5 className="font-bold text-slate-900 mb-3 text-lg leading-tight">Resampling (SMOTETomek)</h5>
-          <p className="text-slate-600 font-light text-sm sm:text-base leading-relaxed flex-1">
-            Mengkolaborasikan SMOTE bersama Tomek Links untuk membentuk profil dataset sintetik yang ideal. Distribusi kelas pasca-sampling tersebar stabil dan proporsional menjadi 1.246 sampel per kelas status.
-          </p>
+        <p className="text-slate-600 font-light text-sm leading-relaxed mb-3">
+          <strong>Input:</strong> Dataset mentah (23 baris) dengan nilai null pada kolom tertentu.<br/>
+          <strong>Proses:</strong> Periksa setiap baris — jika ADA field yang null, HAPUS seluruh baris.<br/>
+          <strong>Output:</strong> Dataset bersih (21 baris) tanpa missing value.
+        </p>
+        <p className="text-xs text-slate-500 italic">
+          Mengapa: KNN tidak bisa menghitung jarak jika ada fitur yang tidak diketahui. Sama dengan jurnal: "kolom Kelompok Populasi memiliki 5 data yang hilang (null)."
+        </p>
+      </div>
+
+      {/* Tahap 2: LabelEncoder */}
+      <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-bold font-mono">2</div>
+          <h5 className="font-bold text-slate-900 text-lg">LabelEncoder</h5>
         </div>
+        <p className="text-slate-600 font-light text-sm leading-relaxed mb-3">
+          <strong>Input:</strong> Dataset bersih dengan nilai STRING (kategorikal).<br/>
+          <strong>Proses:</strong> Kumpulkan nilai unik per kolom → urutkan alphabetically → assign angka berurutan.<br/>
+          <strong>Output:</strong> Dataset ter-encode dengan angka.
+        </p>
+        <p className="text-xs text-slate-500 italic">
+          Mengapa: Euclidean Distance tidak bisa menghitung jarak antara string "Laki-laki" dan "Perempuan". Jurnal: "LabelEncoder berfungsi untuk mengubah setiap nilai dalam kolom menjadi angka berurutan."
+        </p>
+      </div>
+
+      {/* Tahap 3: Splitting */}
+      <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-green-600 font-bold font-mono">3</div>
+          <h5 className="font-bold text-slate-900 text-lg">Splitting Data (80/20)</h5>
+        </div>
+        <p className="text-slate-600 font-light text-sm leading-relaxed mb-3">
+          <strong>Input:</strong> Seluruh data ter-encode.<br/>
+          <strong>Proses:</strong> Fisher-Yates shuffle (seed=42) → 80% training, 20% testing.<br/>
+          <strong>Output:</strong> Data training (untuk melatih KNN) dan data testing (untuk mengevaluasi).
+        </p>
+        <p className="text-xs text-slate-500 italic">
+          Mengapa: Data testing tidak boleh digunakan saat training — jika iya, model "menghafal" dan akurasinya palsu (data leakage). Jurnal: "20% testing, 80% training."
+        </p>
+      </div>
+
+      {/* Tahap 4: SMOTE */}
+      <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 font-bold font-mono">4</div>
+          <h5 className="font-bold text-slate-900 text-lg">SMOTE (Penanganan Imbalance)</h5>
+        </div>
+        <p className="text-slate-600 font-light text-sm leading-relaxed mb-3">
+          <strong>Input:</strong> Data training dengan distribusi kelas tidak seimbang.<br/>
+          <strong>Proses:</strong> Untuk kelas minoritas → cari K tetangga → interpolasi linear → generate sampel sintetis.<br/>
+          <strong>Output:</strong> Data training seimbang (semua kelas jumlahnya sama).
+        </p>
+        <p className="text-xs text-slate-500 italic">
+          Mengapa: Tanpa SMOTE, KNN akan bias ke kelas mayoritas. Jurnal: "SMOTETomek sebagai metode resampling untuk mengatasi ketidakseimbangan kelas."
+        </p>
+      </div>
+
+      {/* Tahap 5: Normalisasi */}
+      <div className="p-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 font-bold font-mono">5</div>
+          <h5 className="font-bold text-slate-900 text-lg">Normalisasi (Min-Max)</h5>
+        </div>
+        <p className="text-slate-600 font-light text-sm leading-relaxed mb-3">
+          <strong>Input:</strong> Data dengan nilai asli (umur 21-62, jenis kelamin 0-1, dll).<br/>
+          <strong>Proses:</strong> Hitung min/max per fitur → terapkan rumus (x - min) / (max - min).<br/>
+          <strong>Output:</strong> Semua fitur bernilai antara 0 dan 1.
+        </p>
+        <p className="text-xs text-slate-500 italic">
+          Mengapa: Tanpa normalisasi, umur (21-62) mendominasi jarak Euclidean dibanding jenis kelamin (0-1). Min-Max memastikan semua fitur punya bobot adil.
+        </p>
       </div>
     </div>
   );

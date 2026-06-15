@@ -3,10 +3,11 @@
  * =======
  * Root component untuk aplikasi VECTRA.
  *
- * Aplikasi ini memiliki 3 tab:
+ * Aplikasi ini memiliki 4 tab:
  *   1. Evaluasi Risiko — Form prediksi HIV menggunakan KNN custom
- *   2. Evaluasi Model  — Confusion matrix, metrik performa, optimasi K
+ *   2. Evaluasi Model  — Pipeline preprocessing + confusion matrix + optimasi K
  *   3. Pusat Pengetahuan — Dokumentasi algoritma dan arsitektur
+ *   4. Tentang — Informasi pembuat, universitas, dan kelompok
  *
  * Catatan: Tidak ada library ML external yang digunakan.
  *          Semua algoritma diimplementasi dari scratch dengan komentar penjelasan.
@@ -16,14 +17,15 @@ import React, { useState } from 'react';
 import Predictor from './components/Predictor';
 import Documentation from './components/Documentation';
 import ModelEvaluation from './components/ModelEvaluation';
+import About from './components/About';
 import { Stethoscope } from 'lucide-react';
 
 /**
- * Root component — router sederhana berbasis state untuk 3 tab.
+ * Root component — router sederhana berbasis state untuk 4 tab.
  */
 export default function App() {
-  // State untuk tab aktif: 'predictor' | 'evaluation' | 'documentation'
-  const [activeTab, setActiveTab] = useState<'predictor' | 'evaluation' | 'documentation'>('predictor');
+  // State untuk tab aktif
+  const [activeTab, setActiveTab] = useState<'predictor' | 'evaluation' | 'documentation' | 'about'>('predictor');
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800">
@@ -37,11 +39,11 @@ export default function App() {
           </div>
 
           {/* Navigasi tab */}
-          <nav className="flex gap-4 sm:gap-6 overflow-x-auto w-full sm:w-auto justify-center pb-2 sm:pb-0">
+          <nav className="flex gap-3 sm:gap-5 overflow-x-auto w-full sm:w-auto justify-center pb-2 sm:pb-0">
             {/* Tab 1: Evaluasi Risiko */}
             <button
               onClick={() => setActiveTab('predictor')}
-              className={`text-xs sm:text-sm whitespace-nowrap font-semibold uppercase tracking-wide transition-colors ${
+              className={`text-[10px] sm:text-sm whitespace-nowrap font-semibold uppercase tracking-wide transition-colors ${
                 activeTab === 'predictor' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -51,7 +53,7 @@ export default function App() {
             {/* Tab 2: Evaluasi Model */}
             <button
               onClick={() => setActiveTab('evaluation')}
-              className={`text-xs sm:text-sm whitespace-nowrap font-semibold uppercase tracking-wide transition-colors ${
+              className={`text-[10px] sm:text-sm whitespace-nowrap font-semibold uppercase tracking-wide transition-colors ${
                 activeTab === 'evaluation' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
@@ -61,11 +63,21 @@ export default function App() {
             {/* Tab 3: Pusat Pengetahuan */}
             <button
               onClick={() => setActiveTab('documentation')}
-              className={`text-xs sm:text-sm whitespace-nowrap font-semibold uppercase tracking-wide transition-colors ${
+              className={`text-[10px] sm:text-sm whitespace-nowrap font-semibold uppercase tracking-wide transition-colors ${
                 activeTab === 'documentation' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-700'
               }`}
             >
               Pusat Pengetahuan
+            </button>
+
+            {/* Tab 4: Tentang */}
+            <button
+              onClick={() => setActiveTab('about')}
+              className={`text-[10px] sm:text-sm whitespace-nowrap font-semibold uppercase tracking-wide transition-colors ${
+                activeTab === 'about' ? 'text-slate-900 border-b-2 border-slate-900' : 'text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              Tentang
             </button>
           </nav>
         </div>
@@ -91,13 +103,16 @@ export default function App() {
 
         {/* Tab 3: Pusat Pengetahuan */}
         {activeTab === 'documentation' && <Documentation />}
+
+        {/* Tab 4: Tentang */}
+        {activeTab === 'about' && <About />}
       </main>
 
       {/* Footer */}
       <footer className="mt-16 sm:mt-24 border-t border-slate-200 py-8 sm:py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-sm text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
-          <span className="font-semibold uppercase tracking-widest text-[10px] sm:text-xs text-slate-400">&copy; {new Date().getFullYear()} Unit Skrining & Machine Learning Terpadu.</span>
-          <span className="text-[10px] sm:text-xs uppercase tracking-widest">Sistem Pendukung Edukasi Medis • Validasi Model Internal</span>
+          <span className="font-semibold uppercase tracking-widest text-[10px] sm:text-xs text-slate-400">&copy; {new Date().getFullYear()} Kelompok 5 — Universitas UNBAJA</span>
+          <span className="text-[10px] sm:text-xs uppercase tracking-widest">Tugas Machine Learning • Sistem Prediksi HIV</span>
         </div>
       </footer>
     </div>
