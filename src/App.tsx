@@ -111,7 +111,7 @@ export default function App() {
       {/* Footer */}
       <footer className="mt-16 sm:mt-24 border-t border-slate-200 py-8 sm:py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-sm text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
-          <span className="font-semibold uppercase tracking-widest text-[10px] sm:text-xs text-slate-400">&copy; {new Date().getFullYear()} Kelompok 5 — Universitas UNBAJA</span>
+          <span className="font-semibold uppercase tracking-widest text-[10px] sm:text-xs text-slate-400">&copy; {new Date().getFullYear()} Kelompok 5 — Universitas Banten Jaya</span>
           <span className="text-[10px] sm:text-xs uppercase tracking-widest">Tugas Machine Learning • Sistem Prediksi HIV</span>
         </div>
       </footer>

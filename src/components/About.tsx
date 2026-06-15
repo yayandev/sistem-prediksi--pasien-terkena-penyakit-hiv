@@ -5,7 +5,7 @@
  * mata kuliah, universitas, dan kelompok.
  *
  * VECTRA dibuat untuk memenuhi tugas mata kuliah Machine Learning
- * di Universitas UNBAJA oleh Kelompok 5.
+ * di Universitas Banten Jaya oleh Kelompok 5.
  */
 
 import React from 'react';
@@ -17,23 +17,23 @@ import { Users, BookOpen, GraduationCap, Heart } from 'lucide-react';
  */
 const TEAM_MEMBERS = [
   {
-    name: '[Nama Anggota 1]',
-    nim: '[NIM]',
+    name: 'Yayan Faturrohman',
+    nim: '112421052',
     role: 'Ketua Kelompok',
   },
   {
-    name: '[Nama Anggota 2]',
-    nim: '[NIM]',
+    name: 'Muhammad Fernanda Putra',
+    nim: '112311024',
     role: 'Anggota',
   },
   {
-    name: '[Nama Anggota 3]',
-    nim: '[NIM]',
+    name: 'Dewi Marshanda H.',
+    nim: '112311001',
     role: 'Anggota',
   },
   {
-    name: '[Nama Anggota 4]',
-    nim: '[NIM]',
+    name: 'Rizky Ardiansyah',
+    nim: '112311010',
     role: 'Anggota',
   },
 ];
@@ -65,7 +65,7 @@ export default function About() {
               </div>
               <div>
                 <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Universitas</div>
-                <div className="text-sm font-semibold text-slate-900">Universitas UNBAJA</div>
+                <div className="text-sm font-semibold text-slate-900">Universitas Banten Jaya</div>
               </div>
               <div>
                 <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Kelompok</div>
