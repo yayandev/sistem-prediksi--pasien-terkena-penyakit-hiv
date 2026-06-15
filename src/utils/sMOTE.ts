@@ -38,6 +38,45 @@
 import type { DatasetRow } from './normalization';
 import { euclideanDistance } from './distance';
 
+/** Extract all 13 features from a DatasetRow (without label) */
+function extractFeatures(row: DatasetRow): number[] {
+  return [
+    row.umur,
+    row.jenis_kelamin,
+    row.kelompok_populasi,
+    row.alasan_kunjungan,
+    row.riwayat_tes_hiv,
+    row.riwayat_ims,
+    row.jumlah_pasangan_seksual,
+    row.penggunaan_kondom,
+    row.penggunaan_napza_suntik,
+    row.status_pernikahan,
+    row.usia_pertama_hubungan,
+    row.terapi_arv,
+    row.gejala_klinis,
+  ];
+}
+
+/** Reconstruct a DatasetRow from feature array + label */
+function toDatasetRow(features: number[], status: number): DatasetRow {
+  return {
+    umur: features[0],
+    jenis_kelamin: features[1],
+    kelompok_populasi: features[2],
+    alasan_kunjungan: features[3],
+    riwayat_tes_hiv: features[4],
+    riwayat_ims: features[5],
+    jumlah_pasangan_seksual: features[6],
+    penggunaan_kondom: features[7],
+    penggunaan_napza_suntik: features[8],
+    status_pernikahan: features[9],
+    usia_pertama_hubungan: features[10],
+    terapi_arv: features[11],
+    gejala_klinis: features[12],
+    status,
+  };
+}
+
 /**
  * Mencari K tetangga terdekat dari sebuah sampel
  * di antara sampel-sampel dengan kelas yang SAMA.
@@ -133,13 +172,7 @@ export function smote(
   const otherClass: DatasetRow[] = [];
 
   for (const row of dataset) {
-    // Ekstrak fitur (tanpa label)
-    const features = [
-      row.umur,
-      row.jenis_kelamin,
-      row.kelompok_populasi,
-      row.alasan_kunjungan,
-    ];
+    const features = extractFeatures(row);
 
     if (row.status === targetClass) {
       sameClass.push(features);
@@ -179,15 +212,11 @@ export function smote(
     // Generate sampel sintetis dengan interpolasi linear
     const syntheticFeatures = interpolateLinear(sample, neighbor, random);
 
-    // Bulatkan fitur diskrit (jenis_kelamin, kelompok_populasi, alasan_kunjungan)
-    // Karena fitur-fitur ini hanya boleh bernilai integer
-    syntheticSamples.push({
-      umur: Math.round(syntheticFeatures[0]),
-      jenis_kelamin: Math.round(syntheticFeatures[1]),
-      kelompok_populasi: Math.round(syntheticFeatures[2]),
-      alasan_kunjungan: Math.round(syntheticFeatures[3]),
-      status: targetClass,
-    });
+    // Bulatkan fitur diskrit dan clamp ke range yang valid
+    syntheticSamples.push(toDatasetRow(
+      syntheticFeatures.map((v, i) => Math.round(v)),
+      targetClass
+    ));
   }
 
   // LANGKAH 4: Gabungkan data asli + sampel sintetis

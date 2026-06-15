@@ -1,76 +1,67 @@
 /**
  * App.tsx
  * =======
- * Root component untuk aplikasi VECTRA dengan React Router + Firebase Auth.
+ * Root component — React Router + Firebase Auth + Role-based routing.
  *
- * Routes:
- *   /login        → Login (Google Sign-In)
- *   /             → Dashboard (ringkasan statistik)
- *   /prediksi     → Form prediksi HIV
- *   /pasien       → Data pasien (CRUD)
- *   /evaluasi     → Evaluasi Model (pipeline + confusion matrix)
- *   /pengetahuan  → Pusat Pengetahuan (dokumentasi)
- *   /tentang      → Tentang (info kelompok)
- *
- * Semua route (kecuali /login dan /tentang) dilindungi oleh ProtectedRoute.
+ * Admin routes:  /, /pasien, /admin/users, /evaluasi
+ * Patient routes: /prediksi, /riwayat, /pengetahuan, /tentang
+ * Public: /login, /tentang
  */
 
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
-import { Stethoscope, Menu, X, LogOut, User } from 'lucide-react';
+import { Stethoscope, Menu, X, LogOut, User, Shield } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './components/LoginPage';
 import Dashboard from './components/Dashboard';
 import Predictor from './components/Predictor';
 import PatientList from './components/PatientList';
+import PatientHistory from './components/PatientHistory';
+import AdminUsers from './components/AdminUsers';
 import Documentation from './components/Documentation';
 import ModelEvaluation from './components/ModelEvaluation';
 import About from './components/About';
 
-/**
- * Layout wrapper — header + footer + outlet untuk routes.
- */
 function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, userProfile, signOut } = useAuth();
 
-  // Tutup mobile menu kalau pindah halaman
   React.useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Jangan tampilkan header di halaman login
   const isLoginPage = location.pathname === '/login';
+  const isAdmin = userProfile?.role === 'admin';
 
-  // Nav items — hanya tampilkan setelah login
+  // Nav items berdasarkan role
   const navItems = user
-    ? [
-        { to: '/', label: 'Dashboard' },
-        { to: '/prediksi', label: 'Prediksi' },
-        { to: '/pasien', label: 'Pasien' },
-        { to: '/evaluasi', label: 'Evaluasi' },
-        { to: '/pengetahuan', label: 'Pengetahuan' },
-        { to: '/tentang', label: 'Tentang' },
-      ]
-    : [
-        { to: '/tentang', label: 'Tentang' },
-      ];
+    ? isAdmin
+      ? [
+          { to: '/', label: 'Dashboard' },
+          { to: '/prediksi', label: 'Prediksi' },
+          { to: '/pasien', label: 'Pasien' },
+          { to: '/admin/users', label: 'Users' },
+          { to: '/evaluasi', label: 'Evaluasi' },
+          { to: '/pengetahuan', label: 'Pengetahuan' },
+          { to: '/tentang', label: 'Tentang' },
+        ]
+      : [
+          { to: '/prediksi', label: 'Prediksi' },
+          { to: '/riwayat', label: 'Riwayat' },
+          { to: '/pengetahuan', label: 'Pengetahuan' },
+          { to: '/tentang', label: 'Tentang' },
+        ]
+    : [{ to: '/tentang', label: 'Tentang' }];
 
   async function handleLogout() {
-    try {
-      await signOut();
-    } catch {
-      // silent fail
-    }
+    try { await signOut(); } catch { /* silent */ }
   }
 
+  // Login page layout (tanpa header/footer)
   if (isLoginPage) {
-    // Sudah login? Redirect ke dashboard
-    if (user) {
-      return <Navigate to="/" replace />;
-    }
+    if (user) return <Navigate to="/" replace />;
     return (
       <div className="min-h-screen bg-white font-sans text-slate-800 flex flex-col">
         <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
@@ -88,7 +79,6 @@ function Layout() {
       {/* Header */}
       <header className="border-b border-slate-300 sticky top-0 z-50 w-full bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-          {/* Logo */}
           <NavLink to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Stethoscope className="w-5 h-5 text-slate-700" />
             <span className="font-semibold text-base sm:text-lg tracking-tight uppercase">VECTRA</span>
@@ -103,9 +93,7 @@ function Layout() {
                 end={item.to === '/'}
                 className={({ isActive }) =>
                   `px-4 py-2 text-xs font-semibold uppercase tracking-wide rounded-lg transition-colors ${
-                    isActive
-                      ? 'text-slate-900 bg-slate-100'
-                      : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                    isActive ? 'text-slate-900 bg-slate-100' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
                   }`
                 }
               >
@@ -114,10 +102,11 @@ function Layout() {
             ))}
           </nav>
 
-          {/* Desktop User Info + Logout */}
+          {/* Desktop User Info */}
           {user && (
             <div className="hidden md:flex items-center gap-3 ml-4">
               <div className="flex items-center gap-2 text-xs text-slate-500">
+                {isAdmin && <Shield className="w-3.5 h-3.5 text-amber-600" />}
                 <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full" />
@@ -125,13 +114,12 @@ function Layout() {
                     <User className="w-4 h-4 text-slate-500" />
                   )}
                 </div>
-                <span className="max-w-[120px] truncate">{user.displayName || user.email}</span>
+                <span className="max-w-[120px] truncate">{userProfile?.displayName || user.displayName || user.email}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 font-bold uppercase ${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                  {userProfile?.role || 'patient'}
+                </span>
               </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Keluar"
-              >
+              <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Keluar">
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
@@ -141,13 +129,12 @@ function Layout() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-2 text-slate-600 hover:text-slate-900 transition-colors"
-            aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
-        {/* Mobile Nav Dropdown */}
+        {/* Mobile Nav */}
         {mobileMenuOpen && (
           <nav className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
             {navItems.map((item) => (
@@ -157,9 +144,7 @@ function Layout() {
                 end={item.to === '/'}
                 className={({ isActive }) =>
                   `block px-4 py-3 text-sm font-semibold uppercase tracking-wide rounded-lg transition-colors ${
-                    isActive
-                      ? 'text-slate-900 bg-slate-100'
-                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                    isActive ? 'text-slate-900 bg-slate-100' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                   }`
                 }
               >
@@ -167,12 +152,8 @@ function Layout() {
               </NavLink>
             ))}
             {user && (
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Keluar
+              <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                <LogOut className="w-4 h-4" /> Keluar
               </button>
             )}
           </nav>
@@ -185,8 +166,10 @@ function Layout() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/prediksi" element={<ProtectedRoute><Predictor /></ProtectedRoute>} />
-          <Route path="/pasien" element={<ProtectedRoute><PatientList /></ProtectedRoute>} />
-          <Route path="/evaluasi" element={<ProtectedRoute><ModelEvaluation /></ProtectedRoute>} />
+          <Route path="/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
+          <Route path="/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
+          <Route path="/evaluasi" element={<ProtectedRoute requiredRole="admin"><ModelEvaluation /></ProtectedRoute>} />
           <Route path="/pengetahuan" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
           <Route path="/tentang" element={<About />} />
         </Routes>
@@ -203,9 +186,6 @@ function Layout() {
   );
 }
 
-/**
- * Root App — bungkus dengan BrowserRouter + AuthProvider.
- */
 export default function App() {
   return (
     <BrowserRouter>

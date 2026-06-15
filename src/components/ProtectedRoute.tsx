@@ -2,15 +2,21 @@
  * ProtectedRoute.tsx
  * ==================
  * Auth guard — redirect ke /login jika belum login.
+ * Support role-based access via requiredRole prop.
  */
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, UserRole } from '../contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+interface Props {
+  children: React.ReactNode;
+  requiredRole?: UserRole;
+}
+
+export default function ProtectedRoute({ children, requiredRole }: Props) {
+  const { user, userProfile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -22,6 +28,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Cek role jika diminta
+  if (requiredRole && userProfile && userProfile.role !== requiredRole) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

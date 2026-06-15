@@ -141,7 +141,12 @@ export function correlationMatrix(dataset: DatasetRow[]): {
   features: string[];
   pairs: CorrelationPair[];
 } {
-  const features = ['umur', 'jenis_kelamin', 'kelompok_populasi', 'alasan_kunjungan', 'status'];
+  const features = [
+    'umur', 'jenis_kelamin', 'kelompok_populasi', 'alasan_kunjungan',
+    'riwayat_tes_hiv', 'riwayat_ims', 'jumlah_pasangan_seksual',
+    'penggunaan_kondom', 'penggunaan_napza_suntik', 'status_pernikahan',
+    'usia_pertama_hubungan', 'terapi_arv', 'gejala_klinis', 'status',
+  ];
 
   // Ekstrak kolom untuk setiap fitur
   const columns: number[][] = features.map(f =>

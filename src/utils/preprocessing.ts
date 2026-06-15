@@ -3,94 +3,82 @@
  * ================
  * Implementasi manual 5 Tahap Preprocessing Data dari scratch.
  *
- * Sesuai Jurnal (halaman 128-130):
- *   Tahap 1: Data Cleaning — hapus missing value, hapus atribut tidak relevan
- *   Tahap 2: LabelEncoder — ubah string kategorikal ke numerik
- *   Tahap 3: Splitting Data — bagi 80% training, 20% testing
- *   Tahap 4: Penanganan Imbalance — SMOTETomek resampling
- *   Tahap 5: Normalisasi — Min-Max Normalization
+ * 13 Fitur Input:
+ *   1. umur (numerik)
+ *   2. jenis_kelamin (kategorikal)
+ *   3. kelompok_populasi (kategorikal)
+ *   4. alasan_kunjungan (kategorikal)
+ *   5. riwayat_tes_hiv (kategorikal)
+ *   6. riwayat_ims (kategorikal)
+ *   7. jumlah_pasangan_seksual (numerik)
+ *   8. penggunaan_kondom (kategorikal)
+ *   9. penggunaan_napza_suntik (kategorikal)
+ *   10. status_pernikahan (kategorikal)
+ *   11. usia_pertama_hubungan (numerik)
+ *   12. terapi_arv (kategorikal)
+ *   13. gejala_klinis (kategorikal)
  *
- * Pipeline lengkap:
- *   Raw Data (string) → Cleaning → LabelEncoder → Splitting → SMOTE → Normalisasi
+ * Pipeline:
+ *   Raw Data → Cleaning → LabelEncoder → Splitting → SMOTE → Normalisasi
  */
 
 import type { DatasetRow } from './normalization';
 import { smoteAllClasses } from './sMOTE';
 
 // ============================================================
-// TAPE 1: DATA CLEANING
+// TYPES
 // ============================================================
 
-/**
- * Tipe data untuk baris dataset MENTAH (sebelum cleaning).
- * Field masih berupa string (kategorikal) dan bisa null.
- */
 export interface RawDatasetRow {
-  /** Usia pasien (angka) */
   umur: number | null;
-  /** Jenis kelamin dalam bentuk string */
   jenis_kelamin: string | null;
-  /** Kelompok populasi dalam bentuk string */
   kelompok_populasi: string | null;
-  /** Alasan kunjungan dalam bentuk string */
   alasan_kunjungan: string | null;
-  /** Status ODHIV dalam bentuk string */
+  riwayat_tes_hiv: string | null;
+  riwayat_ims: string | null;
+  jumlah_pasangan_seksual: number | null;
+  penggunaan_kondom: string | null;
+  penggunaan_napza_suntik: string | null;
+  status_pernikahan: string | null;
+  usia_pertama_hubungan: number | null;
+  terapi_arv: string | null;
+  gejala_klinis: string | null;
   status_odhiv: string | null;
 }
 
-/**
- * Tipe data untuk laporan preprocessing.
- */
 export interface PreprocessingReport {
-  /** Jumlah data sebelum cleaning */
   rawCount: number;
-  /** Jumlah data setelah cleaning (hapus null) */
   cleanedCount: number;
-  /** Jumlah baris yang dihapus (missing values) */
   removedRows: number;
-  /** Label yang ditemukan untuk Jenis Kelamin */
-  jenisKelaminLabels: string[];
-  /** Label yang ditemukan untuk Kelompok Populasi */
-  kelompokPopulasiLabels: string[];
-  /** Label yang ditemukan untuk Alasan Kunjungan */
-  alasanKunjunganLabels: string[];
-  /** Label yang ditemukan untuk Status ODHIV */
-  statusLabels: string[];
-  /** Mapping LabelEncoder untuk setiap kolom */
   encodingMaps: Record<string, Record<string, number>>;
-  /** Jumlah data training */
-  trainSize: number;
-  /** Jumlah data testing */
-  testSize: number;
-  /** Distribusi kelas sebelum SMOTE */
   classDistributionBefore: Record<number, number>;
-  /** Distribusi kelas sesudah SMOTE */
   classDistributionAfter: Record<number, number>;
-  /** Total data setelah SMOTE */
   totalAfterSmote: number;
 }
 
+// ============================================================
+// TAHAP 1: DATA CLEANING
+// ============================================================
+
 /**
- * Tahap 1: Data Cleaning — menghapus baris dengan missing value (null).
- *
- * Sesuai Jurnal (halaman 128):
- *   "Pada proses ini dilakukan pengecekan missing value,
- *    memastikan data tidak ada yang hilang."
- *
- *   "Dataset memiliki 2.205 baris dengan 5 kolom,
- *    dimana hanya kolom Kelompok Populasi yang memiliki 5 data yang hilang (null)."
- *
- * @param rawData - Dataset mentah dengan string dan null
- * @returns Dataset yang sudah dibersihkan (tanpa null)
+ * Hapus baris dengan missing value (null) di SEMUA field.
  */
 export function cleanData(rawData: RawDatasetRow[]): RawDatasetRow[] {
-  // Filter: hanya ambil baris yang TIDAK memiliki null di SEMUA field
   return rawData.filter((row) => {
     return (
       row.umur !== null &&
       row.jenis_kelamin !== null &&
       row.kelompok_populasi !== null &&
       row.alasan_kunjungan !== null &&
+      row.riwayat_tes_hiv !== null &&
+      row.riwayat_ims !== null &&
+      row.jumlah_pasangan_seksual !== null &&
+      row.penggunaan_kondom !== null &&
+      row.penggunaan_napza_suntik !== null &&
+      row.status_pernikahan !== null &&
+      row.usia_pertama_hubungan !== null &&
+      row.terapi_arv !== null &&
+      row.gejala_klinis !== null &&
       row.status_odhiv !== null
     );
   });
@@ -100,60 +88,39 @@ export function cleanData(rawData: RawDatasetRow[]): RawDatasetRow[] {
 // TAHAP 2: LABEL ENCODER
 // ============================================================
 
+/** Kolom kategorikal yang perlu di-encode */
+const CATEGORICAL_COLUMNS = [
+  'jenis_kelamin',
+  'kelompok_populasi',
+  'alasan_kunjungan',
+  'riwayat_tes_hiv',
+  'riwayat_ims',
+  'penggunaan_kondom',
+  'penggunaan_napza_suntik',
+  'status_pernikahan',
+  'terapi_arv',
+  'gejala_klinis',
+  'status_odhiv',
+] as const;
+
 /**
- * Melakukan LabelEncoder — mengubah string kategorikal ke angka.
- *
- * Sesuai Jurnal (halaman 129):
- *   "Pada machine learning data seperti ini tidak dapat diproses
- *    karena kolom labelnya yaitu berbentuk string atau termasuk
- *    kategorikal data, maka harus diubah menjadi data numerik
- *    dengan label encoder."
- *
- *   "LabelEncoder berfungsi untuk mengubah setiap nilai dalam
- *    kolom menjadi angka berurutan."
- *
- * Mapping (contoh dari jurnal):
- *   Negative = 0, Positive = 1
- *
- * Mapping kita (3 kelas):
- *   Belum Tahu = 0, Bukan ODHIV = 1, ODHIV = 2
- *
- * @param cleanedData - Dataset yang sudah dibersihkan
- * @returns Objek berisi encoded dataset dan mapping
+ * LabelEncoder — mengubah string kategorikal ke angka.
+ * Mapping: sorted alphabetically → 0, 1, 2, ...
  */
 export function labelEncode(cleanedData: RawDatasetRow[]): {
   encoded: DatasetRow[];
   maps: Record<string, Record<string, number>>;
 } {
-  // Kumpulkan semua unik values untuk setiap kolom kategorikal
-  const uniqueJenisKelamin = [...new Set(cleanedData.map(r => r.jenis_kelamin!))].sort();
-  const uniqueKelompokPopulasi = [...new Set(cleanedData.map(r => r.kelompok_populasi!))].sort();
-  const uniqueAlasanKunjungan = [...new Set(cleanedData.map(r => r.alasan_kunjungan!))].sort();
-  const uniqueStatus = [...new Set(cleanedData.map(r => r.status_odhiv!))].sort();
+  // Kumpulkan unique values untuk setiap kolom kategorikal
+  const maps: Record<string, Record<string, number>> = {};
 
-  // Buat mapping: string → angka (berurutan)
-  const maps: Record<string, Record<string, number>> = {
-    jenis_kelamin: {},
-    kelompok_populasi: {},
-    alasan_kunjungan: {},
-    status_odhiv: {},
-  };
-
-  uniqueJenisKelamin.forEach((val, idx) => {
-    maps.jenis_kelamin[val] = idx;
-  });
-
-  uniqueKelompokPopulasi.forEach((val, idx) => {
-    maps.kelompok_populasi[val] = idx;
-  });
-
-  uniqueAlasanKunjungan.forEach((val, idx) => {
-    maps.alasan_kunjungan[val] = idx;
-  });
-
-  uniqueStatus.forEach((val, idx) => {
-    maps.status_odhiv[val] = idx;
-  });
+  for (const col of CATEGORICAL_COLUMNS) {
+    const uniqueValues = [...new Set(cleanedData.map((r) => r[col]!))].sort();
+    maps[col] = {};
+    uniqueValues.forEach((val, idx) => {
+      maps[col][val] = idx;
+    });
+  }
 
   // Konversi setiap baris dari string ke angka
   const encoded: DatasetRow[] = cleanedData.map((row) => ({
@@ -161,6 +128,15 @@ export function labelEncode(cleanedData: RawDatasetRow[]): {
     jenis_kelamin: maps.jenis_kelamin[row.jenis_kelamin!],
     kelompok_populasi: maps.kelompok_populasi[row.kelompok_populasi!],
     alasan_kunjungan: maps.alasan_kunjungan[row.alasan_kunjungan!],
+    riwayat_tes_hiv: maps.riwayat_tes_hiv[row.riwayat_tes_hiv!],
+    riwayat_ims: maps.riwayat_ims[row.riwayat_ims!],
+    jumlah_pasangan_seksual: row.jumlah_pasangan_seksual!,
+    penggunaan_kondom: maps.penggunaan_kondom[row.penggunaan_kondom!],
+    penggunaan_napza_suntik: maps.penggunaan_napza_suntik[row.penggunaan_napza_suntik!],
+    status_pernikahan: maps.status_pernikahan[row.status_pernikahan!],
+    usia_pertama_hubungan: row.usia_pertama_hubungan!,
+    terapi_arv: maps.terapi_arv[row.terapi_arv!],
+    gejala_klinis: maps.gejala_klinis[row.gejala_klinis!],
     status: maps.status_odhiv[row.status_odhiv!],
   }));
 
@@ -168,28 +144,11 @@ export function labelEncode(cleanedData: RawDatasetRow[]): {
 }
 
 // ============================================================
-// TAHAP 5: NORMALISASI (dari normalization.ts)
-// ============================================================
-
-// Fungsi normalisasi sudah ada di normalization.ts
-// getBounds(), normalizeDataset(), normalizeFeatureArray()
-
-// ============================================================
 // PIPELINE LENGKAP
 // ============================================================
 
 /**
  * Menjalankan pipeline preprocessing LENGKAP dari data mentah.
- *
- * Alur sesuai jurnal:
- *   1. Data Cleaning (hapus null)
- *   2. LabelEncoder (string → angka)
- *   3. Splitting Data (80/20)
- *   4. SMOTE (seimbangkan kelas)
- *   5. Normalisasi (Min-Max)
- *
- * @param rawData - Dataset mentah (dengan string dan null)
- * @returns Objek berisi semua tahapan preprocessing dan laporan
  */
 export function runFullPreprocessing(rawData: RawDatasetRow[]): {
   cleanedData: RawDatasetRow[];
@@ -197,48 +156,29 @@ export function runFullPreprocessing(rawData: RawDatasetRow[]): {
   encodingMaps: Record<string, Record<string, number>>;
   report: PreprocessingReport;
 } {
-  // === TAHAP 1: DATA CLEANING ===
   const cleanedData = cleanData(rawData);
-
-  // Hitung jumlah baris yang dihapus
   const removedRows = rawData.length - cleanedData.length;
 
-  // === TAHAP 2: LABEL ENCODER ===
   const { encoded, maps } = labelEncode(cleanedData);
 
-  // Kumpulkan label unik untuk laporan
-  const jenisKelaminLabels = [...new Set(cleanedData.map(r => r.jenis_kelamin!))].sort();
-  const kelompokPopulasiLabels = [...new Set(cleanedData.map(r => r.kelompok_populasi!))].sort();
-  const alasanKunjunganLabels = [...new Set(cleanedData.map(r => r.alasan_kunjungan!))].sort();
-  const statusLabels = [...new Set(cleanedData.map(r => r.status_odhiv!))].sort();
-
-  // === TAHAP 4: SMOTE (sebelum normalisasi untuk menampilkan distribusi) ===
+  // SMOTE
   const smoteData = smoteAllClasses(encoded, 3, 42);
 
-  // Hitung distribusi kelas sebelum SMOTE
   const classDistributionBefore: Record<number, number> = {};
   for (const row of encoded) {
     classDistributionBefore[row.status] = (classDistributionBefore[row.status] || 0) + 1;
   }
 
-  // Hitung distribusi kelas sesudah SMOTE
   const classDistributionAfter: Record<number, number> = {};
   for (const row of smoteData) {
     classDistributionAfter[row.status] = (classDistributionAfter[row.status] || 0) + 1;
   }
 
-  // === BUAT LAPORAN ===
   const report: PreprocessingReport = {
     rawCount: rawData.length,
     cleanedCount: cleanedData.length,
     removedRows,
-    jenisKelaminLabels,
-    kelompokPopulasiLabels,
-    alasanKunjunganLabels,
-    statusLabels,
     encodingMaps: maps,
-    trainSize: 0, // Akan diisi saat splitting
-    testSize: 0,
     classDistributionBefore,
     classDistributionAfter,
     totalAfterSmote: smoteData.length,

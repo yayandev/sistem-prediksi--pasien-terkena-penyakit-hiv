@@ -1,559 +1,461 @@
 /**
  * Predictor.tsx
- * =============
- * Komponen formulir prediksi risiko HIV menggunakan algoritma KNN custom.
- *
- * Alur Kerja (Pipeline Lengkap sesuai Jurnal):
- *   1. User mengisi form (usia, jenis kelamin, kelompok populasi, alasan kunjungan)
- *   2. Data mentah → Data Cleaning (hapus null) → LabelEncoder (string → angka)
- *   3. Normalisasi input user menggunakan Min-Max Normalization
- *   4. Sistem menjalankan KNN custom (tanpa library external)
- *   5. Sistem menampilkan hasil prediksi (0: Belum Tahu, 1: Bukan ODHIV, 2: ODHIV)
- *
- * Catatan: Tidak ada library ML external yang digunakan.
- *          Semua algoritma diimplementasi dari scratch dengan komentar penjelasan.
+ * ============
+ * Multi-step wizard form (4 steps) untuk prediksi HIV.
+ * 13 input features — 4 langkah:
+ *   Step 1: Identitas (nama, umur, jenis_kelamin, status_pernikahan, kelompok_populasi)
+ *   Step 2: Riwayat Kesehatan (riwayat_tes_hiv, riwayat_ims, terapi_arv, gejala_klinis)
+ *   Step 3: Gaya Hidup (alasan_kunjungan, jumlah_pasangan_seksual, penggunaan_kondom, penggunaan_napza_suntik)
+ *   Step 4: Hasil & Simpan
  */
 
-import React, { useState, useMemo } from 'react';
-import { runFullPreprocessing } from '../utils/preprocessing';
-import { getBounds, normalizeFeatureArray, normalizeDataset, getLabels } from '../utils/normalization';
-import { knnPredict, knnPredictWithDetails } from '../utils/knn';
-import rawDataset from '../data/raw_hiv_dataset.json';
-import { addPrediction } from '../lib/firestore';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { AlertCircle, FileText, CheckCircle2, Info, ArrowRight, ChevronDown, ChevronUp, Save, Loader2 } from 'lucide-react';
+import { addPrediction } from '../lib/firestore';
+import { predict, loadTrainingData } from '../ml/runner';
+import { ArrowLeft, ArrowRight, Zap, Check, AlertTriangle, Database, Save, Loader2, Trash2 } from 'lucide-react';
 
-/** Nama kelas target */
-const CLASS_NAMES: Record<number, string> = {
-  0: 'Belum Tahu (Indeterminate)',
-  1: 'Bukan ODHIV (Negatif)',
-  2: 'ODHIV (Positif)',
+interface PredictionResult {
+  predictedClass: number;
+  predictedLabel: string;
+  neighbors: Array<{ label: number; distance: number; rank: number }>;
+  votes: Record<number, number>;
+}
+
+const CLASS_LABELS: Record<number, string> = {
+  0: 'Bukan ODHIV',
+  1: 'ODHIV',
+  2: 'Belum Tahu',
+};
+
+const STEPS = [
+  { id: 1, label: 'Identitas' },
+  { id: 2, label: 'Riwayat Kesehatan' },
+  { id: 3, label: 'Gaya Hidup' },
+  { id: 4, label: 'Hasil' },
+];
+
+const GENDER_MAP: Record<string, number> = { 'Laki-laki': 1, 'Perempuan': 2 };
+const BOOL_MAP: Record<string, number> = { 'Ya': 1, 'Tidak': 0 };
+
+interface FormData {
+  nama: string;
+  umur: string;
+  jenis_kelamin: string;
+  kelompok_populasi: string;
+  alasan_kunjungan: string;
+  riwayat_tes_hiv: string;
+  riwayat_ims: string;
+  jumlah_pasangan_seksual: string;
+  penggunaan_kondom: string;
+  penggunaan_napza_suntik: string;
+  status_pernikahan: string;
+  usia_pertama_hubungan: string;
+  terapi_arv: string;
+  gejala_klinis: string;
+}
+
+const EMPTY_FORM: FormData = {
+  nama: '', umur: '', jenis_kelamin: '', kelompok_populasi: '',
+  alasan_kunjungan: '', riwayat_tes_hiv: '', riwayat_ims: '',
+  jumlah_pasangan_seksual: '', penggunaan_kondom: '', penggunaan_napza_suntik: '',
+  status_pernikahan: '', usia_pertama_hubungan: '', terapi_arv: '', gejala_klinis: '',
 };
 
 export default function Predictor() {
-  const { user } = useAuth();
-  const [nama, setNama] = useState<string>('');
-  const [umur, setUmur] = useState<string>('');
-  const [jenisKelamin, setJenisKelamin] = useState<string>('Laki-laki');
-  const [kelompokPopulasi, setKelompokPopulasi] = useState<string>('Populasi Umum');
-  const [alasanKunjungan, setAlasanKunjungan] = useState<string>('Tes HIV');
-  const [prediction, setPrediction] = useState<number | null>(null);
-  const [predictionDetail, setPredictionDetail] = useState<{
-    neighbors: { label: number; distance: number }[];
-    voting: Record<number, number>;
-    pipeline: { raw: string[]; encoded: number[]; normalized: number[] };
-  } | null>(null);
-  const [showPipelineDetail, setShowPipelineDetail] = useState(false);
+  const { user, userProfile } = useAuth();
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState<FormData>(EMPTY_FORM);
+  const [result, setResult] = useState<PredictionResult | null>(null);
+  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [trainingDataLoaded, setTrainingDataLoaded] = useState(false);
+  const [loadingTraining, setLoadingTraining] = useState(false);
 
-  const { cleanedData, encodedData, encodingMaps } = useMemo(() => {
-    return runFullPreprocessing(rawDataset);
+  useEffect(() => {
+    async function init() {
+      setLoadingTraining(true);
+      await loadTrainingData();
+      setTrainingDataLoaded(true);
+      setLoadingTraining(false);
+    }
+    init();
   }, []);
 
-  const bounds = useMemo(() => {
-    return getBounds(encodedData);
-  }, [encodedData]);
+  const set = (field: keyof FormData, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
 
-  const handlePredict = (e: React.FormEvent) => {
-    e.preventDefault();
+  function toNums(f: FormData) {
+    return {
+      umur: Number(f.umur) || 0,
+      jenis_kelamin: GENDER_MAP[f.jenis_kelamin] || 0,
+      kelompok_populasi: Number(f.kelompok_populasi) || 0,
+      alasan_kunjungan: Number(f.alasan_kunjungan) || 0,
+      riwayat_tes_hiv: Number(f.riwayat_tes_hiv) || 0,
+      riwayat_ims: Number(f.riwayat_ims) || 0,
+      jumlah_pasangan_seksual: Number(f.jumlah_pasangan_seksual) || 0,
+      penggunaan_kondom: BOOL_MAP[f.penggunaan_kondom] || 0,
+      penggunaan_napza_suntik: BOOL_MAP[f.penggunaan_napza_suntik] || 0,
+      status_pernikahan: Number(f.status_pernikahan) || 0,
+      usia_pertama_hubungan: Number(f.usia_pertama_hubungan) || 0,
+      terapi_arv: BOOL_MAP[f.terapi_arv] || 0,
+      gejala_klinis: Number(f.gejala_klinis) || 0,
+    };
+  }
 
-    const umurNum = parseInt(umur, 10);
-    if (isNaN(umurNum)) {
-      alert('Harap masukkan nilai numerik yang valid untuk Usia.');
+  function runPrediction() {
+    setError('');
+    const nums = toNums(form);
+    if (!form.umur || !form.jenis_kelamin) {
+      setError('Umur dan Jenis Kelamin wajib diisi');
       return;
     }
+    try {
+      const pred = predict(nums);
+      setResult(pred);
+      setStep(4);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menjalankan prediksi');
+    }
+  }
 
-    // Pipeline: Raw → LabelEncoder → Normalisasi → KNN
-    const rawInput = [String(umurNum), jenisKelamin, kelompokPopulasi, alasanKunjungan];
-    const encodedInput = [
-      umurNum,
-      encodingMaps.jenis_kelamin[jenisKelamin],
-      encodingMaps.kelompok_populasi[kelompokPopulasi],
-      encodingMaps.alasan_kunjungan[alasanKunjungan],
-    ];
-    const normalizedInput = normalizeFeatureArray(encodedInput, bounds);
-
-    const normalizedTrainingX = normalizeDataset(encodedData, bounds);
-    const trainingY = getLabels(encodedData);
-
-    const result = knnPredict(normalizedTrainingX, trainingY, normalizedInput, 3);
-    const detail = knnPredictWithDetails(normalizedTrainingX, trainingY, normalizedInput, 3);
-
-    setPredictionDetail({
-      neighbors: detail.neighbors,
-      voting: detail.voting,
-      pipeline: { raw: rawInput, encoded: encodedInput, normalized: normalizedInput },
-    });
-
-    setPrediction(result);
-  };
-
-  /** Simpan hasil prediksi ke Firestore */
-  async function handleSavePrediction() {
-    if (!predictionDetail || prediction === null || !nama.trim()) return;
+  async function handleSave() {
+    if (!result || !user) return;
     setSaving(true);
     try {
       await addPrediction({
-        nama: nama.trim(),
-        umur: parseInt(umur, 10),
-        jenis_kelamin: jenisKelamin,
-        kelompok_populasi: kelompokPopulasi,
-        alasan_kunjungan: alasanKunjungan,
-        predictedClass: prediction,
-        predictedLabel: CLASS_NAMES[prediction],
-        neighbors: predictionDetail.neighbors.map((n, i) => ({
-          label: n.label,
-          distance: n.distance,
-          rank: i + 1,
-        })),
-        votes: predictionDetail.voting,
-        createdBy: user?.uid || '',
+        patientId: '',
+        nama: form.nama || 'Tanpa Nama',
+        ...toNums(form),
+        predictedClass: result.predictedClass,
+        predictedLabel: result.predictedLabel,
+        neighbors: result.neighbors,
+        votes: result.votes,
+        createdBy: user.uid,
       });
       setSaved(true);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal menyimpan';
-      alert(msg);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan');
     } finally {
       setSaving(false);
     }
   }
 
-  // Hitung total suara
-  const totalVotes: number = predictionDetail
-    ? (Object.values(predictionDetail.voting) as number[]).reduce((a, b) => a + b, 0)
-    : 0;
+  function resetForm() {
+    setForm(EMPTY_FORM);
+    setResult(null);
+    setSaved(false);
+    setError('');
+    setStep(1);
+  }
+
+  const canNext = () => {
+    if (step === 1) return form.umur && form.jenis_kelamin;
+    return true;
+  };
 
   return (
-    <div className="w-full space-y-8 sm:space-y-10">
-      {/* Page Header */}
-      <div className="border-b border-slate-200 pb-6 sm:pb-8 text-center max-w-2xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-semibold mb-3 tracking-tight uppercase">Sistem Prediksi Pasien Terkena Penyakit HIV</h1>
-        <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Formulir asesmen mandiri untuk mengevaluasi faktor risiko transmisi berdasarkan analisis pola historis dan algoritma klasifikasi Machine Learning terukur.
+    <div className="max-w-3xl mx-auto">
+      {/* Header */}
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight uppercase mb-2">
+          Prediksi Risiko HIV
+        </h1>
+        <p className="text-sm text-slate-500">
+          Masukkan data pasien lengkap untuk prediksi berbasis algoritma KNN
         </p>
       </div>
 
-      {/* ============================================ */}
-      {/* PENJELASAN CARA KERJA SISTEM */}
-      {/* ============================================ */}
-      <div className="bg-white border-2 border-slate-900">
-        <div className="bg-slate-900 px-6 py-4 flex items-center gap-3">
-          <Info className="text-white w-5 h-5" />
-          <h2 className="text-lg font-medium text-white tracking-widest uppercase">Cara Kerja Sistem Ini</h2>
-        </div>
-        <div className="p-6 sm:p-8 space-y-6">
-          <p className="text-sm text-slate-600 leading-relaxed">
-            Sistem ini menggunakan algoritma <strong className="font-semibold text-slate-900">K-Nearest Neighbors (KNN)</strong> — salah satu algoritma Machine Learning paling sederhana dan intuitif. Prinsipnya: <em>"Lihat pasien yang paling mirip dengan profil kamu, lalu ambil mayoritas prediksi mereka."</em>
-          </p>
-
-          {/* Step-by-step */}
-          <div className="space-y-4">
-            {[
-              {
-                step: '1',
-                title: 'Isi Formulir',
-                desc: 'Masukkan data kamu: usia, jenis kelamin, kelompok populasi, dan alasan kunjungan ke poli VCT.',
-              },
-              {
-                step: '2',
-                title: 'Sistem Mengubah ke Angka',
-                desc: 'Input berupa teks (misal "Laki-laki") diubah jadi angka pakai LabelEncoder. Laki-laki=0, Perempuan=1, dst. Ini diperlukan karena KNN menghitung jarak pakai angka.',
-              },
-              {
-                step: '3',
-                title: 'Normalisasi',
-                desc: 'Semua angka dikompres ke range 0-1 supaya adil. Usia (21-62) dan Jenis Kelamin (0-1) harus punya bobot yang sama saat dihitung jaraknya.',
-              },
-              {
-                step: '4',
-                title: 'KNN Mencari 3 Tetangga Terdekat',
-                desc: 'Sistem menghitung jarak profil kamu ke SEMUA pasien di data latih (21 data). Lalu ambil 3 yang paling mirip (jarak terkecil).',
-              },
-              {
-                step: '5',
-                title: 'Voting Mayoritas',
-                desc: 'Dari 3 tetangga tadi, lihat label mana yang paling banyak muncul. Itulah hasil prediksi. Misal: 2 tetangga bilang "ODHIV", 1 bilang "Bukan ODHIV" → hasilnya ODHIV.',
-              },
-            ].map((item) => (
-              <div key={item.step} className="flex gap-4 items-start">
-                <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 text-sm font-bold font-mono">
-                  {item.step}
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">{item.title}</h4>
-                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
-            <strong>Catatan:</strong> Data latih berasal dari 21 rekam medis pasien VCT di RSUD Dr. Chasbullah Abdul Madjid Kota Bekasi (representatif dari 2.205 data asli). KNN belajar dari pola data ini untuk memprediksi data baru.
-          </div>
-        </div>
+      {/* Training Data Status */}
+      <div className="mb-6 flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-200 text-xs text-slate-600 rounded-lg">
+        {loadingTraining ? (
+          <><Loader2 className="w-4 h-4 animate-spin text-slate-400" /> <span>Memuat data training...</span></>
+        ) : trainingDataLoaded ? (
+          <><Database className="w-4 h-4 text-green-600" /> <span>Siap digunakan (13 fitur, 200 data training)</span></>
+        ) : (
+          <><AlertTriangle className="w-4 h-4 text-amber-500" /> <span>Data belum dimuat</span></>
+        )}
       </div>
 
-      {/* ============================================ */}
-      {/* FORMULIR INPUT */}
-      {/* ============================================ */}
-      <div className="bg-white border-2 border-slate-900">
-        <div className="bg-slate-900 px-6 py-4 flex items-center gap-3">
-          <FileText className="text-white w-5 h-5" />
-          <h2 className="text-lg font-medium text-white tracking-widest uppercase">Formulir Evaluasi Risiko</h2>
-        </div>
+      {/* Step Indicator */}
+      <div className="flex items-center gap-2 mb-8">
+        {STEPS.map((s, i) => (
+          <React.Fragment key={s.id}>
+            <button
+              onClick={() => s.id < step && setStep(s.id)}
+              disabled={s.id > step}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold uppercase transition-all ${
+                step === s.id
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : s.id < step
+                  ? 'bg-green-100 text-green-700 cursor-pointer hover:bg-green-200'
+                  : 'bg-slate-100 text-slate-400'
+              }`}
+            >
+              {s.id < step ? <Check className="w-3.5 h-3.5" /> : <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px]">{s.id}</span>}
+              <span className="hidden sm:inline">{s.label}</span>
+            </button>
+            {i < STEPS.length - 1 && <div className={`flex-1 h-px ${s.id < step ? 'bg-green-300' : 'bg-slate-200'}`} />}
+          </React.Fragment>
+        ))}
+      </div>
 
-        <div className="p-6 sm:p-8">
-          {/* Pipeline info */}
-          <div className="mb-6 p-4 bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
-            <strong className="text-slate-900">Pipeline:</strong> Input User → LabelEncoder ({Object.keys(encodingMaps).length} kolom) → Normalisasi (Min-Max) → KNN (K=3) → Prediksi
+      {/* Error */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
+        </div>
+      )}
+
+      {/* Step 1: Identitas */}
+      {step === 1 && (
+        <div className="bg-white border-2 border-slate-900 p-6 sm:p-8 space-y-5">
+          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-5">Identitas Pasien</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Nama (opsional)</label>
+              <input type="text" value={form.nama} onChange={(e) => set('nama', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Umur *</label>
+              <input type="number" value={form.umur} onChange={(e) => set('umur', e.target.value)} placeholder="18-80" className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Jenis Kelamin *</label>
+              <select value={form.jenis_kelamin} onChange={(e) => set('jenis_kelamin', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option>Laki-laki</option>
+                <option>Perempuan</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Status Pernikahan</label>
+              <select value={form.status_pernikahan} onChange={(e) => set('status_pernikahan', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="1">Belum Kawin</option>
+                <option value="2">Kawin</option>
+                <option value="3">Cerai</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Kelompok Populasi</label>
+              <select value={form.kelompok_populasi} onChange={(e) => set('kelompok_populasi', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="0">Umum</option>
+                <option value="1">Waria</option>
+                <option value="2">ODHA</option>
+                <option value="3">Ibu Hamil</option>
+                <option value="4">WBP</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Riwayat Kesehatan */}
+      {step === 2 && (
+        <div className="bg-white border-2 border-slate-900 p-6 sm:p-8 space-y-5">
+          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-5">Riwayat Kesehatan</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Riwayat Tes HIV</label>
+              <select value={form.riwayat_tes_hiv} onChange={(e) => set('riwayat_tes_hiv', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="0">Belum pernah</option>
+                <option value="1">Pernah (negatif)</option>
+                <option value="2">Pernah (positif)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Riwayat IMS</label>
+              <select value={form.riwayat_ims} onChange={(e) => set('riwayat_ims', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="0">Tidak ada</option>
+                <option value="1">Pernah</option>
+                <option value="2">Sedang terjadi</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Terapi ARV</label>
+              <select value={form.terapi_arv} onChange={(e) => set('terapi_arv', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="Ya">Ya</option>
+                <option value="Tidak">Tidak</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Gejala Klinis</label>
+              <select value={form.gejala_klinis} onChange={(e) => set('gejala_klinis', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="0">Tidak ada gejala</option>
+                <option value="1">Gejala ringan</option>
+                <option value="2">Gejala sedang</option>
+                <option value="3">Gejala berat</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Gaya Hidup */}
+      {step === 3 && (
+        <div className="bg-white border-2 border-slate-900 p-6 sm:p-8 space-y-5">
+          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-5">Gaya Hidup & Perilaku</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Alasan Kunjungan</label>
+              <select value={form.alasan_kunjungan} onChange={(e) => set('alasan_kunjungan', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="0">Konseling</option>
+                <option value="1">Tes sukarela</option>
+                <option value="2">Kontak serumah</option>
+                <option value="3">Rujukan klinis</option>
+                <option value="4">IMS</option>
+                <option value="5">Ibu hamil</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Jumlah Pasangan Seksual</label>
+              <input type="number" value={form.jumlah_pasangan_seksual} onChange={(e) => set('jumlah_pasangan_seksual', e.target.value)} placeholder="0-20" className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Penggunaan Kondom</label>
+              <select value={form.penggunaan_kondom} onChange={(e) => set('penggunaan_kondom', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="Ya">Ya</option>
+                <option value="Tidak">Tidak</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Penggunaan NAPZA Suntik</label>
+              <select value={form.penggunaan_napza_suntik} onChange={(e) => set('penggunaan_napza_suntik', e.target.value)} className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors">
+                <option value="">Pilih</option>
+                <option value="Ya">Ya</option>
+                <option value="Tidak">Tidak</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1.5">Usia Pertama Hubungan Seksual</label>
+              <input type="number" value={form.usia_pertama_hubungan} onChange={(e) => set('usia_pertama_hubungan', e.target.value)} placeholder="10-30" className="w-full px-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-slate-900 transition-colors" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 4: Hasil */}
+      {step === 4 && result && (
+        <div className="space-y-6">
+          {/* Prediction Result */}
+          <div className="bg-white border-2 border-slate-900 p-6 sm:p-8">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-6">Hasil Prediksi</h3>
+            <div className="flex items-center gap-4 mb-6 p-5 bg-slate-50 rounded-xl border border-slate-200">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black ${
+                result.predictedClass === 1 ? 'bg-red-100 text-red-700 border border-red-200' :
+                result.predictedClass === 2 ? 'bg-slate-100 text-slate-500 border border-slate-200' :
+                'bg-green-100 text-green-700 border border-green-200'
+              }`}>
+                K{result.predictedClass}
+              </div>
+              <div>
+                <p className="text-[11px] text-slate-500 uppercase font-semibold mb-1">Prediksi</p>
+                <p className="text-lg sm:text-xl font-bold text-slate-900">{result.predictedLabel}</p>
+              </div>
+            </div>
+
+            {/* Vote Details */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              {Object.entries(result.votes).map(([k, v]) => {
+                const label = CLASS_LABELS[Number(k)];
+                const isWinner = Number(k) === result.predictedClass;
+                return (
+                  <div key={k} className={`p-3 rounded-xl border-2 text-center transition-all ${isWinner ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white'}`}>
+                    <p className={`text-[10px] font-bold uppercase mb-1 ${isWinner ? 'text-white/60' : 'text-slate-400'}`}>K{k}</p>
+                    <p className={`text-xl font-black ${isWinner ? 'text-white' : 'text-slate-700'}`}>{v}</p>
+                    <p className={`text-[10px] mt-0.5 ${isWinner ? 'text-white/70' : 'text-slate-500'}`}>{label}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Neighbor Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 px-3 font-bold text-slate-500 uppercase">Rank</th>
+                    <th className="text-left py-2 px-3 font-bold text-slate-500 uppercase">Label</th>
+                    <th className="text-left py-2 px-3 font-bold text-slate-500 uppercase">Jarak</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.neighbors.map((n) => (
+                    <tr key={n.rank} className="border-b border-slate-100">
+                      <td className="py-2 px-3 font-semibold text-slate-700">#{n.rank}</td>
+                      <td className="py-2 px-3 font-semibold text-slate-700">{CLASS_LABELS[n.label]}</td>
+                      <td className="py-2 px-3 font-mono text-slate-600">{n.distance.toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <form onSubmit={handlePredict} className="space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
-              {/* Input Nama */}
-              <div className="space-y-2">
-                <label htmlFor="nama" className="block text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                  Nama Pasien
-                </label>
-                <p className="text-[11px] text-slate-500 -mt-1">Nama lengkap untuk identifikasi prediksi.</p>
-                <input
-                  id="nama"
-                  type="text"
-                  value={nama}
-                  onChange={(e) => setNama(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border-b-2 border-slate-200 focus:border-slate-900 bg-slate-50 focus:bg-white outline-none transition-colors text-slate-900"
-                  placeholder="Masukkan nama pasien"
-                />
-              </div>
-
-              {/* Input Usia */}
-              <div className="space-y-2">
-                <label htmlFor="umur" className="block text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                  Usia Pasien
-                </label>
-                <p className="text-[11px] text-slate-500 -mt-1">Usia dalam tahun. Rentang data latih: 21-62 tahun.</p>
-                <input
-                  id="umur"
-                  type="number"
-                  min="0"
-                  max="120"
-                  value={umur}
-                  onChange={(e) => setUmur(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border-b-2 border-slate-200 focus:border-slate-900 bg-slate-50 focus:bg-white outline-none transition-colors text-slate-900 font-mono"
-                  placeholder="Misal: 28"
-                />
-              </div>
-
-              {/* Select Jenis Kelamin */}
-              <div className="space-y-2">
-                <label htmlFor="jenisKelamin" className="block text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                  Jenis Kelamin
-                </label>
-                <p className="text-[11px] text-slate-500 -mt-1">Dienkoding: Laki-laki=0, Perempuan=1.</p>
-                <select
-                  id="jenisKelamin"
-                  value={jenisKelamin}
-                  onChange={(e) => setJenisKelamin(e.target.value)}
-                  className="w-full px-4 py-3 border-b-2 border-slate-200 focus:border-slate-900 bg-slate-50 focus:bg-white outline-none transition-colors text-slate-900 cursor-pointer appearance-none"
-                >
-                  {Object.keys(encodingMaps.jenis_kelamin).map(label => (
-                    <option key={label} value={label}>{label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Select Kelompok Populasi */}
-              <div className="space-y-2">
-                <label htmlFor="kelompokPopulasi" className="block text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                  Kelompok Populasi
-                </label>
-                <p className="text-[11px] text-slate-500 -mt-1">Golongan berisiko: LSL, Pengguna Napza, Waria, dll.</p>
-                <select
-                  id="kelompokPopulasi"
-                  value={kelompokPopulasi}
-                  onChange={(e) => setKelompokPopulasi(e.target.value)}
-                  className="w-full px-4 py-3 border-b-2 border-slate-200 focus:border-slate-900 bg-slate-50 focus:bg-white outline-none transition-colors text-slate-900 cursor-pointer appearance-none"
-                >
-                  {Object.keys(encodingMaps.kelompok_populasi).map(label => (
-                    <option key={label} value={label}>{label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Select Alasan Kunjungan */}
-              <div className="space-y-2">
-                <label htmlFor="alasanKunjungan" className="block text-sm font-semibold text-slate-900 uppercase tracking-wide">
-                  Alasan Kunjungan
-                </label>
-                <p className="text-[11px] text-slate-500 -mt1">Korelasi tertinggi (-0.86) dengan status ODHIV.</p>
-                <select
-                  id="alasanKunjungan"
-                  value={alasanKunjungan}
-                  onChange={(e) => setAlasanKunjungan(e.target.value)}
-                  className="w-full px-4 py-3 border-b-2 border-slate-200 focus:border-slate-900 bg-slate-50 focus:bg-white outline-none transition-colors text-slate-900 cursor-pointer appearance-none"
-                >
-                  {Object.keys(encodingMaps.alasan_kunjungan).map(label => (
-                    <option key={label} value={label}>{label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="pt-4">
-              <button
-                type="submit"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-medium py-4 px-6 transition-colors uppercase tracking-widest text-sm outline-offset-2"
-              >
-                Proses Analisis Risiko
-              </button>
-            </div>
-          </form>
-
-          {/* ============================================ */}
-          {/* HASIL PREDIKSI */}
-          {/* ============================================ */}
-          {prediction !== null && predictionDetail && (
-            <div className="mt-12 animate-in fade-in slide-in-from-bottom-2 duration-500 border-t-2 border-slate-100 pt-8 space-y-6">
-
-              {/* Header Hasil */}
-              <div className="text-center">
-                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Hasil Analisis</h3>
-                <div className={`inline-block px-6 py-3 text-lg font-bold uppercase tracking-wide ${
-                  prediction === 2 ? 'bg-slate-900 text-white' : prediction === 1 ? 'bg-slate-100 text-slate-900 border border-slate-300' : 'bg-slate-100 text-slate-600 border border-slate-200'
-                }`}>
-                  {CLASS_NAMES[prediction]}
+          {/* Save Button */}
+          {user && (
+            <div className="flex justify-center">
+              {saved ? (
+                <div className="flex items-center gap-2 px-6 py-3 bg-green-50 border border-green-200 text-green-700 text-sm font-semibold rounded-xl">
+                  <Check className="w-4 h-4" /> Tersimpan di Riwayat
                 </div>
-              </div>
-
-              {/* Penjelasan Hasil */}
-              {prediction === 0 && (
-                <div className="p-5 bg-slate-50 border border-slate-200 space-y-3">
-                  <h4 className="text-sm font-bold text-slate-900">Apa artinya?</h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Dari 3 tetangga terdekat yang ditemukan, hasilnya campuran — tidak ada kelas yang menang mutlak. Artinya profil kamu berada di area "abu-abu" di antara kategori ODHIV dan Bukan ODHIV.
-                  </p>
-                  <h4 className="text-sm font-bold text-slate-900">Yang harus dilakukan:</h4>
-                  <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
-                    <li>Lakukan tes HIV ulang di fasyankes dalam 3-6 bulan ke depan</li>
-                    <li>Konsultasi dengan konselor HIV untuk penanganan lebih lanjut</li>
-                    <li>Jangan panik — "Belum Tahu" bukan berarti positif, tapi juga bukan berarti negatif</li>
-                  </ul>
-                </div>
-              )}
-
-              {prediction === 1 && (
-                <div className="p-5 bg-slate-50 border border-slate-200 space-y-3">
-                  <h4 className="text-sm font-bold text-slate-900">Apa artinya?</h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Mayoritas tetangga terdekat kamu (2 dari 3) adalah pasien yang <strong>tidak teridentifikasi HIV</strong>. Profil demografi dan alasan kunjungan kamu lebih mirip dengan pasien golongan rendah risiko.
-                  </p>
-                  <h4 className="text-sm font-bold text-slate-900">Yang harus dilakukan:</h4>
-                  <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
-                    <li>Tetap disarankan untuk melakukan tes HIV rutin (minimal setahun sekali)</li>
-                    <li>Pertahankan pola hidup sehat dan hindari perilaku berisiko</li>
-                    <li>Hasil ini bukan jaminan — tetap waspada dan lakukan pencegahan</li>
-                  </ul>
-                </div>
-              )}
-
-              {prediction === 2 && (
-                <div className="p-5 bg-red-50 border border-red-200 space-y-3">
-                  <h4 className="text-sm font-bold text-slate-900">Apa artinya?</h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Mayoritas tetangga terdekat kamu (2 dari 3) adalah pasien yang <strong>teridentifikasi HIV (ODHIV)</strong>. Profil kamu — kombinasi usia, jenis kelamin, kelompok populasi, dan alasan kunjungan — sangat mirip dengan pola pasien berisiko tinggi di data latih.
-                  </p>
-                  <h4 className="text-sm font-bold text-slate-900">Yang harus dilakukan:</h4>
-                  <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
-                    <li><strong>Segera</strong> lakukan tes HIV di fasyankes terdekat (ELISA / Western Blot)</li>
-                    <li>Jangan tunda — semakin cepat terdeteksi, semakin baik penanganannya</li>
-                    <li>Konsultasi dengan dokter spesialis untuk langkah selanjutnya</li>
-                    <li>Ingat: ini prediksi, bukan diagnosis final. Tapi sebaiknya diambil langkah antisipasi</li>
-                  </ul>
-                </div>
-              )}
-
-              {/* ============================================ */}
-              {/* PIPELINE: INPUT → ENCODED → NORMALIZED */}
-              {/* ============================================ */}
-              <div className="bg-white border border-slate-200">
+              ) : (
                 <button
-                  onClick={() => setShowPipelineDetail(!showPipelineDetail)}
-                  className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-50 transition-colors"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-50"
                 >
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Pipeline Transformasi Input</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Lihat bagaimana input kamu diubah dari teks → angka → normalisasi</p>
-                  </div>
-                  {showPipelineDetail ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Simpan ke Riwayat
                 </button>
-
-                {showPipelineDetail && (
-                  <div className="px-5 pb-5 space-y-4 border-t border-slate-100 pt-4">
-                    {/* Tabel transformasi per fitur */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-slate-100">
-                            <th className="p-2 text-left border border-slate-300 font-semibold">Fitur</th>
-                            <th className="p-2 text-left border border-slate-300 font-semibold">Input (Teks)</th>
-                            <th className="p-2 text-center border border-slate-300 font-semibold">Setelah Encode</th>
-                            <th className="p-2 text-center border border-slate-300 font-semibold">Setelah Normalisasi</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td className="p-2 border border-slate-300 font-semibold">Usia</td>
-                            <td className="p-2 border border-slate-300 font-mono">{predictionDetail.pipeline.raw[0]}</td>
-                            <td className="p-2 text-center border border-slate-300 font-mono">{predictionDetail.pipeline.encoded[0]}</td>
-                            <td className="p-2 text-center border border-slate-300 font-mono">{predictionDetail.pipeline.normalized[0].toFixed(4)}</td>
-                          </tr>
-                          <tr>
-                            <td className="p-2 border border-slate-300 font-semibold">Jenis Kelamin</td>
-                            <td className="p-2 border border-slate-300 font-mono">{predictionDetail.pipeline.raw[1]}</td>
-                            <td className="p-2 text-center border border-slate-300 font-mono">{predictionDetail.pipeline.encoded[1]}</td>
-                            <td className="p-2 text-center border border-slate-300 font-mono">{predictionDetail.pipeline.normalized[1].toFixed(4)}</td>
-                          </tr>
-                          <tr>
-                            <td className="p-2 border border-slate-300 font-semibold">Kel. Populasi</td>
-                            <td className="p-2 border border-slate-300 font-mono">{predictionDetail.pipeline.raw[2]}</td>
-                            <td className="p-2 text-center border border-slate-300 font-mono">{predictionDetail.pipeline.encoded[2]}</td>
-                            <td className="p-2 text-center border border-slate-300 font-mono">{predictionDetail.pipeline.normalized[2].toFixed(4)}</td>
-                          </tr>
-                          <tr>
-                            <td className="p-2 border border-slate-300 font-semibold">Alasan Kunj.</td>
-                            <td className="p-2 border border-slate-300 font-mono">{predictionDetail.pipeline.raw[3]}</td>
-                            <td className="p-2 text-center border border-slate-300 font-mono">{predictionDetail.pipeline.encoded[3]}</td>
-                            <td className="p-2 text-center border border-slate-300 font-mono">{predictionDetail.pipeline.normalized[3].toFixed(4)}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="text-[11px] text-slate-500 space-y-1">
-                      <p><strong>Raw → Encoded:</strong> Teks diubah ke angka berdasarkan urutan alfabet (LabelEncoder).</p>
-                      <p><strong>Encoded → Normalized:</strong> Angka dikompres ke range 0-1 pakai rumus (x - min) / (max - min).</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ============================================ */}
-              {/* DETAIL KNN: TETANGGA & VOTING */}
-              {/* ============================================ */}
-              <div className="bg-white border border-slate-200 p-5 space-y-4">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Detail Proses KNN (K=3)</h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">3 pasien paling mirip dengan profil kamu di data latih, dan siapa yang menang voting</p>
-                </div>
-
-                {/* Tabel Tetangga */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-slate-100">
-                        <th className="p-2 text-center border border-slate-300 font-semibold">Peringkat</th>
-                        <th className="p-2 text-center border border-slate-300 font-semibold">Kelas Tetangga</th>
-                        <th className="p-2 text-center border border-slate-300 font-semibold">Jarak Euclidean</th>
-                        <th className="p-2 text-left border border-slate-300 font-semibold">Keterangan</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {predictionDetail.neighbors.map((n, i) => (
-                        <tr key={i} className={i === 0 ? 'bg-slate-50' : ''}>
-                          <td className="p-2 text-center border border-slate-300 font-mono font-bold">#{i + 1}</td>
-                          <td className="p-2 text-center border border-slate-300">
-                            <span className={`inline-block px-2 py-0.5 font-semibold ${
-                              n.label === 2 ? 'bg-slate-900 text-white' : n.label === 1 ? 'bg-slate-100 text-slate-700' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                              {CLASS_NAMES[n.label]}
-                            </span>
-                          </td>
-                          <td className="p-2 text-center border border-slate-300 font-mono">{n.distance.toFixed(4)}</td>
-                          <td className="p-2 text-left border border-slate-300 text-slate-600">
-                            {i === 0 ? 'Paling mirip' : i === 1 ? 'Kedua paling mirip' : 'Ketiga paling mirip'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Voting */}
-                <div className="p-4 bg-slate-50 border border-slate-200">
-                  <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wide mb-3">Hasil Voting Mayoritas</h5>
-                  <div className="space-y-2">
-                    {(Object.entries(predictionDetail.voting) as [string, number][]).sort((a, b) => b[1] - a[1]).map(([label, count]) => {
-                      const labelNum = parseInt(label, 10);
-                      const percentage = (count / totalVotes) * 100;
-                      const isWinner = count === Math.max(...(Object.values(predictionDetail.voting) as number[]));
-                      return (
-                        <div key={label} className="flex items-center gap-3">
-                          <span className="text-[11px] font-mono w-28 text-right text-slate-600 truncate">{CLASS_NAMES[labelNum]}</span>
-                          <div className="flex-1 bg-slate-200 h-5 relative rounded-sm overflow-hidden">
-                            <div
-                              className={`h-full transition-all ${isWinner ? 'bg-slate-900' : 'bg-slate-400'}`}
-                              style={{ width: `${percentage}%` }}
-                            />
-                            <span className={`absolute right-2 top-0 h-5 flex items-center text-[10px] font-mono ${isWinner ? 'text-white font-bold' : 'text-slate-600'}`}>
-                              {count} suara ({percentage.toFixed(0)}%)
-                            </span>
-                          </div>
-                          {isWinner && (
-                            <span className="text-[10px] font-bold text-slate-900 uppercase bg-yellow-100 px-2 py-0.5 border border-yellow-300 shrink-0">
-                              MENANG
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-3 leading-relaxed">
-                    Karena {Math.max(...(Object.values(predictionDetail.voting) as number[]))} dari {totalVotes} tetangga memilih kelas <strong>{CLASS_NAMES[prediction]}</strong>, maka hasil prediksinya adalah <strong>{CLASS_NAMES[prediction]}</strong>.
-                  </p>
-                </div>
-              </div>
-
-              {/* Disclaimer */}
-              <div className="p-4 bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
-                <strong className="block mb-1">Catatan Penting:</strong>
-                Hasil prediksi di atas bukan diagnosis medis. Sistem ini dibuat untuk edukasi — menunjukkan bagaimana KNN bekerja dalam konteks kesehatan. Akurasi model ini adalah {((predictionDetail.voting[prediction as unknown as number] as number || 0) / totalVotes * 100).toFixed(0)}% berdasarkan voting tetangga. Untuk diagnosis yang akurat, silakan lakukan tes HIV di fasyankes (ELISA / Western Blot) dan konsultasi dengan dokter yang kompeten.
-              </div>
-
-              {/* Simpan Hasil */}
-              {user && (
-                <div className="flex items-center gap-3">
-                  {saved ? (
-                    <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold">
-                      <CheckCircle2 className="w-4 h-4" />
-                      Tersimpan ke database
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleSavePrediction}
-                      disabled={saving || !nama.trim()}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Menyimpan...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          Simpan Hasil Prediksi
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
               )}
             </div>
           )}
         </div>
+      )}
+
+      {/* Navigation Buttons */}
+      <div className="flex justify-between items-center mt-8">
+        <button
+          onClick={() => setStep((s) => s - 1)}
+          disabled={step === 1}
+          className="flex items-center gap-2 px-5 py-3 border-2 border-slate-300 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-400 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ArrowLeft className="w-4 h-4" /> Kembali
+        </button>
+
+        {step < 3 ? (
+          <button
+            onClick={() => setStep((s) => s + 1)}
+            disabled={!canNext()}
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Lanjut <ArrowRight className="w-4 h-4" />
+          </button>
+        ) : step === 3 ? (
+          <button
+            onClick={runPrediction}
+            disabled={!trainingDataLoaded}
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Zap className="w-4 h-4" /> Prediksi
+          </button>
+        ) : (
+          <button
+            onClick={resetForm}
+            className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-slate-300 text-slate-700 text-sm font-semibold rounded-xl hover:bg-slate-50 hover:border-slate-400 transition-all"
+          >
+            <Trash2 className="w-4 h-4" /> Prediksi Baru
+          </button>
+        )}
       </div>
     </div>
   );

@@ -117,9 +117,9 @@ export default function ModelEvaluation() {
         <div className="p-4 bg-slate-50 border border-slate-200">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
           <div className="text-xs text-slate-700 space-y-1">
-            <p><strong>Input:</strong> {preprocessing.report.rawCount} baris data mentah — masih teks, ada yang null.</p>
+            <p><strong>Input:</strong> {preprocessing.report.rawCount} baris data mentah — 13 fitur + 1 target, masih teks, ada yang null.</p>
             <p><strong>Proses:</strong> Cek tiap baris. Kalau ada satupun kolom yang kosong, buang seluruh barisnya.</p>
-            <p><strong>Output:</strong> {preprocessing.report.cleanedCount} baris bersih.</p>
+            <p><strong>Output:</strong> {preprocessing.report.cleanedCount} baris bersih, 13 fitur terisi lengkap.</p>
           </div>
         </div>
 
@@ -140,9 +140,12 @@ export default function ModelEvaluation() {
             <thead>
               <tr className="bg-slate-100">
                 <th className="p-2 text-left border border-slate-300">Umur</th>
-                <th className="p-2 text-left border border-slate-300">Jenis Kelamin</th>
-                <th className="p-2 text-left border border-slate-300">Kel. Populasi</th>
-                <th className="p-2 text-left border border-slate-300">Alasan Kunj.</th>
+                <th className="p-2 text-left border border-slate-300">JK</th>
+                <th className="p-2 text-left border border-slate-300">Kel. Pop</th>
+                <th className="p-2 text-left border border-slate-300">Alasan</th>
+                <th className="p-2 text-left border border-slate-300">R. Tes</th>
+                <th className="p-2 text-left border border-slate-300">R. IMS</th>
+                <th className="p-2 text-left border border-slate-300">Pasangan</th>
                 <th className="p-2 text-left border border-slate-300">Status</th>
               </tr>
             </thead>
@@ -153,6 +156,9 @@ export default function ModelEvaluation() {
                   <td className="p-2 border border-slate-300">{row.jenis_kelamin}</td>
                   <td className="p-2 border border-slate-300">{row.kelompok_populasi}</td>
                   <td className="p-2 border border-slate-300">{row.alasan_kunjungan}</td>
+                  <td className="p-2 border border-slate-300">{row.riwayat_tes_hiv}</td>
+                  <td className="p-2 border border-slate-300">{row.riwayat_ims}</td>
+                  <td className="p-2 border border-slate-300">{row.jumlah_pasangan_seksual}</td>
                   <td className="p-2 border border-slate-300">{row.status_odhiv}</td>
                 </tr>
               ))}
@@ -187,9 +193,9 @@ export default function ModelEvaluation() {
         <div className="p-4 bg-slate-50 border border-slate-200">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
           <div className="text-xs text-slate-700 space-y-1">
-            <p><strong>Input:</strong> {preprocessing.report.cleanedCount} baris bersih, masih teks.</p>
+            <p><strong>Input:</strong> {preprocessing.report.cleanedCount} baris bersih, 13 fitur — masih teks.</p>
             <p><strong>Proses:</strong> Kumpulkan nilai unik per kolom → urutkan alfabet → kasih angka 0, 1, 2, dst.</p>
-            <p><strong>Output:</strong> Semua teks udah jadi angka.</p>
+            <p><strong>Output:</strong> Semua teks udah jadi angka (14 kolom numerik).</p>
           </div>
         </div>
 
@@ -226,9 +232,12 @@ export default function ModelEvaluation() {
             <thead>
               <tr className="bg-slate-100">
                 <th className="p-2 text-left border border-slate-300">Umur</th>
-                <th className="p-2 text-left border border-slate-300">Jenis Kelamin</th>
-                <th className="p-2 text-left border border-slate-300">Kel. Populasi</th>
-                <th className="p-2 text-left border border-slate-300">Alasan Kunj.</th>
+                <th className="p-2 text-left border border-slate-300">JK</th>
+                <th className="p-2 text-left border border-slate-300">Kel. Pop</th>
+                <th className="p-2 text-left border border-slate-300">Alasan</th>
+                <th className="p-2 text-left border border-slate-300">R. Tes</th>
+                <th className="p-2 text-left border border-slate-300">R. IMS</th>
+                <th className="p-2 text-left border border-slate-300">Pasangan</th>
                 <th className="p-2 text-left border border-slate-300">Status</th>
               </tr>
             </thead>
@@ -239,6 +248,9 @@ export default function ModelEvaluation() {
                   <td className="p-2 border border-slate-300 font-mono">{row.jenis_kelamin}</td>
                   <td className="p-2 border border-slate-300 font-mono">{row.kelompok_populasi}</td>
                   <td className="p-2 border border-slate-300 font-mono">{row.alasan_kunjungan}</td>
+                  <td className="p-2 border border-slate-300 font-mono">{row.riwayat_tes_hiv}</td>
+                  <td className="p-2 border border-slate-300 font-mono">{row.riwayat_ims}</td>
+                  <td className="p-2 border border-slate-300 font-mono">{row.jumlah_pasangan_seksual}</td>
                   <td className="p-2 border border-slate-300 font-mono">{row.status}</td>
                 </tr>
               ))}
@@ -286,7 +298,7 @@ export default function ModelEvaluation() {
         <div className="p-4 bg-slate-50 border border-slate-200">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
           <div className="text-xs text-slate-700 space-y-1">
-            <p><strong>Input:</strong> {preprocessing.encodedData.length} data udah jadi angka.</p>
+            <p><strong>Input:</strong> {preprocessing.encodedData.length} data udah jadi angka (14 kolom: 13 fitur + 1 target).</p>
             <p><strong>Proses:</strong> Acak pakai Fisher-Yates Shuffle (seed=42) → 80% training, 20% testing.</p>
             <p><strong>Output:</strong> Training = {split.train.length} data, Testing = {split.test.length} data.</p>
           </div>
@@ -483,7 +495,7 @@ export default function ModelEvaluation() {
         <div className="p-4 bg-white border border-slate-200">
           <h4 className="text-sm font-semibold text-slate-900 mb-2">Kenapa harus dinormalisasi?</h4>
           <ul className="text-xs text-slate-600 space-y-1">
-            <li>• <strong>Tanpa normalisasi:</strong> Usia (21-62) mendominasi jarak dibanding Jenis Kelamin (0-1).</li>
+            <li>• <strong>Tanpa normalisasi:</strong> Usia (21-62) dan jumlah pasangan (1-10) mendominasi jarak dibanding fitur biner (0-1).</li>
             <li>• <strong>Min-Max bikin semua fitur setara</strong> — range-nya sama-sama 0 sampai 1.</li>
           </ul>
         </div>
@@ -502,7 +514,7 @@ export default function ModelEvaluation() {
                 </tr>
               </thead>
               <tbody>
-                {['umur', 'jenis_kelamin', 'kelompok_populasi', 'alasan_kunjungan'].map((fitur, i) => (
+                {['umur', 'jenis_kelamin', 'kelompok_populasi', 'alasan_kunjungan', 'riwayat_tes_hiv', 'riwayat_ims', 'jumlah_pasangan_seksual', 'penggunaan_kondom', 'penggunaan_napza_suntik', 'status_pernikahan', 'usia_pertama_hubungan', 'terapi_arv', 'gejala_klinis'].map((fitur, i) => (
                   <tr key={i}>
                     <td className="p-2 border border-slate-300 font-semibold">{fitur}</td>
                     <td className="p-2 text-center border border-slate-300 font-mono">{normalization.bounds.min[i]}</td>
@@ -807,7 +819,7 @@ export default function ModelEvaluation() {
       {/* ============================================================ */}
       <Section title="Korelasi Antar Fitur" icon={Table2}>
         <p className="text-sm text-slate-600">
-          Korelasi Pearson — ngukur seberapa erat hubungan antara dua fitur. Range: -1 sampai +1.
+          Korelasi Pearson — ngukur seberapa erat hubungan antara dua fitur dari 13 input + 1 target. Range: -1 sampai +1.
         </p>
 
         <div className="overflow-x-auto">
@@ -847,9 +859,10 @@ export default function ModelEvaluation() {
         <div className="p-4 bg-slate-50 border border-slate-200">
           <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Yang menarik:</h4>
           <ul className="text-xs text-slate-600 space-y-1">
-            <li>• <strong>Status ODHIV ↔ Alasan Kunjungan:</strong> -0.86 → hubungan kuat, terbalik.</li>
-            <li>• <strong>Jenis Kelamin ↔ Status ODHIV:</strong> -0.30 → moderat.</li>
-            <li>• <strong>Umur ↔ Variabel lain:</strong> ~0 → hampir nggak ada hubungan.</li>
+            <li>• <strong>14 kolom</strong>: 13 fitur + 1 target (status_odhiv).</li>
+            <li>• Fitur numerik (umur, jumlah_pasangan, usia_pertama_hubungan) langsung dipakai.</li>
+            <li>• Fitur kategorikal di-encode jadi angka oleh LabelEncoder.</li>
+            <li>• Warna merah = korelasi kuat, kuning = sedang, hijau = lemah.</li>
           </ul>
         </div>
 
