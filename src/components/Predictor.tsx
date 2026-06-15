@@ -113,7 +113,7 @@ export default function Predictor() {
       penggunaan_kondom: f.penggunaan_kondom || '',
       penggunaan_napza_suntik: f.penggunaan_napza_suntik || '',
       status_pernikahan: f.status_pernikahan || '',
-      usia_pertama_hubungan: belumPernah ? 25 : Number(f.usia_pertama_hubungan) || 0,
+      usia_pertama_hubungan: belumPernah ? 0 : Number(f.usia_pertama_hubungan) || 0,
       terapi_arv: f.terapi_arv || '',
       gejala_klinis: f.gejala_klinis || '',
     };
@@ -375,7 +375,7 @@ export default function Predictor() {
                     checked={belumPernah}
                     onChange={(e) => {
                       setBelumPernah(e.target.checked);
-                      if (e.target.checked) set('usia_pertama_hubungan', '25');
+                      if (e.target.checked) set('usia_pertama_hubungan', '0');
                     }}
                     className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                   />
