@@ -230,10 +230,10 @@ export default function Predictor() {
                 <AlertCircle className="w-6 h-6 text-slate-500 shrink-0" />
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wide mb-2">
-                    Hasil Indikasi: Belum Tahu (Indeterminate)
+                    Hasil: Belum Tahu (Indeterminate)
                   </h3>
                   <p className="text-slate-600 leading-relaxed">
-                    Berdasarkan metrik yang dimasukkan, profil ini belum dapat diklasifikasikan dengan tegas. Pemeriksaan lebih lanjut disarankan.
+                    Profil yang kamu masukkan belum bisa dipastikan masuk kategori mana. Bisa jadi datanya kurang representatif atau memang perlu pemeriksaan lebih lanjut. Disarankan untuk tes ulang atau konsultasi ke dokter.
                   </p>
                 </div>
               </div>
@@ -245,10 +245,10 @@ export default function Predictor() {
                 <CheckCircle2 className="w-6 h-6 text-slate-900 shrink-0" />
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wide mb-2">
-                    Hasil Indikasi: Bukan ODHIV (Negatif)
+                    Hasil: Bukan ODHIV (Negatif)
                   </h3>
                   <p className="text-slate-600 leading-relaxed">
-                    Berdasarkan metrik yang dimasukkan, profil ini paling mendekati pola risiko rendah pada basis data referensi klinis kami saat ini.
+                    Berdasarkan data latih, profil ini lebih mirip dengan pasien yang tidak teridentifikasi HIV. Tapi ingat, ini cuma prediksi dari data — bukan diagnosis final. Kalau ragu, tetap lakukan tes HIV yang resmi.
                   </p>
                 </div>
               </div>
@@ -260,10 +260,10 @@ export default function Predictor() {
                 <AlertCircle className="w-6 h-6 text-slate-900 shrink-0" />
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 uppercase tracking-wide mb-2">
-                    Hasil Indikasi: ODHIV (Positif)
+                    Hasil: ODHIV (Positif)
                   </h3>
                   <p className="text-slate-600 leading-relaxed">
-                    Karakteristik demografi dan riwayat kunjungan medis yang dimasukkan sejajar dengan profil riwayat pasien berisiko tinggi.
+                    Profil ini mirip dengan pasien yang teridentifikasi HIV di data latih kami. Ini bukan berarti kamu pasti positif — tapi sebaiknya segera lakukan tes HIV di fasyankes terdekat untuk memastikan.
                   </p>
                 </div>
               </div>
@@ -285,8 +285,8 @@ export default function Predictor() {
 
             {/* Disclaimer medis */}
             <div className="mt-8 border border-slate-200 p-5 text-sm text-slate-500 leading-relaxed bg-white">
-              <strong className="font-semibold text-slate-900 uppercase tracking-wider text-xs block mb-1">Pernyataan Batasan Tanggung Jawab Medis</strong>
-              Aplikasi ini dirancang secara eksklusif untuk tujuan pameran komputasional (model KNN) dan tidak memadai untuk diinterpretasikan sebagai diagnosis definitif. Sistem ini bukan pengganti untuk evaluasi, konseling, maupun pengujian klinis formal seperti uji titer ELISA atau Western Blot yang diatur oleh tenaga ahli medis bersertifikasi.
+              <strong className="font-semibold text-slate-900 uppercase tracking-wider text-xs block mb-1">Penting Dibaca</strong>
+              Hasil prediksi di atas bukan diagnosis medis. Sistem ini cuma tools edukasi yang menunjukkan bagaimana KNN bekerja dalam konteks kesehatan. Untuk diagnosis yang akurat, silakan lakukan tes HIV di fasyankes (ELISA / Western Blot) dan konsultasi dengan dokter yang kompeten.
             </div>
           </div>
         )}

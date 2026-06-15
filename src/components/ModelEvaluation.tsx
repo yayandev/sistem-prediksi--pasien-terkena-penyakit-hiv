@@ -114,8 +114,7 @@ export default function ModelEvaluation() {
       <div className="border-b border-slate-200 pb-6 sm:pb-8 text-center max-w-2xl mx-auto">
         <h1 className="text-2xl sm:text-3xl font-semibold mb-3 tracking-tight uppercase">Evaluasi Model KNN</h1>
         <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-          Seluruh pipeline preprocessing dan evaluasi model K-Nearest Neighbors.
-          Setiap tahap dijelaskan MENGAPA output-nya demikian.
+          Lihat gimana data diproses dari awal sampai akhir — dari data mentah sampai jadi prediksi. Setiap tahap dijelaskan kenapa hasilnya begitu.
         </p>
       </div>
 
@@ -128,25 +127,25 @@ export default function ModelEvaluation() {
           <div className="p-4 bg-slate-50 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
             <div className="text-xs text-slate-700 space-y-1">
-              <p><strong>Input:</strong> Dataset mentah ({preprocessing.report.rawCount} baris) dalam bentuk string (kategorikal).</p>
-              <p><strong>Proses:</strong> Periksa setiap baris — jika ADA field yang null/kosong, HAPUS seluruh baris.</p>
-              <p><strong>Output:</strong> Dataset bersih ({preprocessing.report.cleanedCount} baris) tanpa missing value.</p>
+              <p><strong>Input:</strong> {preprocessing.report.rawCount} baris data mentah — masih berupa teks (string) dan ada yang kosong (null).</p>
+              <p><strong>Proses:</strong> Cek tiap baris. Kalau ada satupun kolom yang kosong, buang seluruh barisnya.</p>
+              <p><strong>Output:</strong> {preprocessing.report.cleanedCount} baris bersih — siap diproses lebih lanjut.</p>
             </div>
           </div>
 
           {/* Alasan */}
           <div className="p-4 bg-white border border-slate-200">
-            <h4 className="text-sm font-semibold text-slate-900 mb-2">Mengapa output-nya begini?</h4>
+            <h4 className="text-sm font-semibold text-slate-900 mb-2">Kenapa harus dibuang?</h4>
             <ul className="text-xs text-slate-600 space-y-1">
-              <li>• <strong>Baris yang dihapus ({preprocessing.report.removedRows} baris):</strong> Memiliki null di kolom "kelompok_populasi".</li>
-              <li>• <strong>Karena null pada kelompok_populasi</strong> — KNN tidak bisa menghitung jarak jika ada fitur yang tidak diketahui.</li>
-              <li>• <strong>Sama dengan jurnal (hal. 128):</strong> "Dataset memiliki 2.205 baris, dimana hanya kolom Kelompok Populasi yang memiliki 5 data yang hilang (null)."</li>
+              <li>• <strong>{preprocessing.report.removedRows} baris yang dibuang</strong> — punya null di kolom "kelompok_populasi".</li>
+              <li>• <strong>KNN nggak bisa kerja dengan data kosong</strong> — rumus Euclidean Distance butuh semua fitur terisi.</li>
+              <li>• <strong>Sama kayak jurnal (hal. 128):</strong> "kolom Kelompok Populasi memiliki 5 data yang hilang (null)."</li>
             </ul>
           </div>
 
           {/* Tabel Contoh Data Sebelum/Sesudah */}
           <div className="overflow-x-auto">
-            <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Contoh Data (3 baris pertama sesudah cleaning):</h4>
+            <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Contoh Data Setelah Dibersihkan (3 baris pertama):</h4>
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100">
@@ -169,7 +168,7 @@ export default function ModelEvaluation() {
                 ))}
               </tbody>
             </table>
-            <p className="text-[10px] text-slate-500 mt-1">Data masih dalam bentuk STRING (belum angka) — akan diproses di Tahap 2.</p>
+            <p className="text-[10px] text-slate-500 mt-1">Masih teks semua — nanti di Tahap 2 kita ubah jadi angka.</p>
           </div>
         </div>
       </Section>
@@ -183,19 +182,19 @@ export default function ModelEvaluation() {
           <div className="p-4 bg-slate-50 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
             <div className="text-xs text-slate-700 space-y-1">
-              <p><strong>Input:</strong> Dataset bersih ({preprocessing.report.cleanedCount} baris) dengan nilai STRING.</p>
-              <p><strong>Proses:</strong> Kumpulkan semua nilai unik per kolom → urutkan → assign angka berurutan.</p>
-              <p><strong>Output:</strong> Dataset ter-encode (angka) yang bisa diproses KNN.</p>
+              <p><strong>Input:</strong> {preprocessing.report.cleanedCount} baris bersih, masih berupa teks.</p>
+              <p><strong>Proses:</strong> Ambil semua nilai unik per kolom → urutkan alfabet → kasih angka 0, 1, 2, dst.</p>
+              <p><strong>Output:</strong> Semua teks udah jadi angka — siap dihitung jaraknya.</p>
             </div>
           </div>
 
           {/* Mapping */}
           <div className="p-4 bg-white border border-slate-200">
-            <h4 className="text-sm font-semibold text-slate-900 mb-2">Mengapa output-nya begini?</h4>
+            <h4 className="text-sm font-semibold text-slate-900 mb-2">Kenapa harus diubah ke angka?</h4>
             <ul className="text-xs text-slate-600 space-y-1">
-              <li>• <strong>KNN bekerja dengan angka</strong> — Euclidean Distance tidak bisa menghitung jarak antara string "Laki-laki" dan "Perempuan".</li>
-              <li>• <strong>LabelEncoder mengurutkan alphabetically</strong> → Laki-laki=0, Perempuan=1 (L di depan P).</li>
-              <li>• <strong>Sama dengan jurnal (hal. 129):</strong> "LabelEncoder berfungsi untuk mengubah setiap nilai dalam kolom menjadi angka berurutan."</li>
+              <li>• <strong>KNN kerjanya pakai angka</strong> — rumus Euclidean Distance nggak bisa ngitung jarak antara "Laki-laki" dan "Perempuan".</li>
+              <li>• <strong>LabelEncoder urutkan alfabet</strong> → Laki-laki=0, Perempuan=1 (L di depan P).</li>
+              <li>• <strong>Sama kayak jurnal (hal. 129):</strong> "LabelEncoder berfungsi untuk mengubah setiap nilai dalam kolom menjadi angka berurutan."</li>
             </ul>
           </div>
 
@@ -253,19 +252,18 @@ export default function ModelEvaluation() {
           <div className="p-4 bg-slate-50 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
             <div className="text-xs text-slate-700 space-y-1">
-              <p><strong>Input:</strong> {preprocessing.encodedData.length} data ter-encode.</p>
-              <p><strong>Proses:</strong> Acak dengan Fisher-Yates Shuffle (seed=42) → ambil 80% pertama = training, 20% sisanya = testing.</p>
+              <p><strong>Input:</strong> {preprocessing.encodedData.length} data udah jadi angka.</p>
+              <p><strong>Proses:</strong> Data diacak dulu (Fisher-Yates, seed=42) → 80% buat latihan, 20% buat tes.</p>
               <p><strong>Output:</strong> Training = {split.train.length} data, Testing = {split.test.length} data.</p>
             </div>
           </div>
 
           <div className="p-4 bg-white border border-slate-200">
-            <h4 className="text-sm font-semibold text-slate-900 mb-2">Mengapa output-nya begini?</h4>
+            <h4 className="text-sm font-semibold text-slate-900 mb-2">Kenapa harus dipisah?</h4>
             <ul className="text-xs text-slate-600 space-y-1">
-              <li>• <strong>80/20 split</strong> — proporsi standar dalam machine learning (sesuai jurnal hal. 130).</li>
-              <li>• <strong>Data testing tidak boleh digunakan saat training</strong> — jika iya, model akan "menghafal" dan akurasinya palsu (data leakage).</li>
-              <li>• <strong>Seed=42</strong> memastikan setiap kali dijalankan, hasil split-nya SAMA (reproducibility).</li>
-              <li>• <strong>Proporsi kelas dijaga</strong> — distribusi kelas di training dan testing mencerminkan distribusi asli.</li>
+              <li>• <strong>80/20 itu proporsi umum</strong> di machine learning (sesuai jurnal hal. 130).</li>
+              <li>• <strong>Data testing nggak boleh dipake saat training</strong> — kalau iya, model cuma "menghafal" dan hasilnya nggak bisa dipercaya (data leakage).</li>
+              <li>• <strong>Seed=42</strong> biar tiap kali dijalankan, hasil split-nya selalu sama.</li>
             </ul>
           </div>
 
@@ -317,25 +315,25 @@ export default function ModelEvaluation() {
       {/* ======================================== */}
       {/* TAHAP 4: SMOTE */}
       {/* ======================================== */}
-      <Section title="Tahap 4 — SMOTE (Penanganan Imbalance)" icon={Layers}>
+      <Section title="Tahap 4 — SMOTE (Seimbangkan Kelas)" icon={Layers}>
         <div className="space-y-4">
           <div className="p-4 bg-slate-50 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
             <div className="text-xs text-slate-700 space-y-1">
-              <p><strong>Input:</strong> Data training ({split.train.length} data) dengan distribusi kelas tidak seimbang.</p>
-              <p><strong>Proses:</strong> Untuk kelas minoritas → cari K tetangga terdekat → interpolasi linear → generate sampel sintetis.</p>
+              <p><strong>Input:</strong> Data training ({split.train.length} data) — kelasnya timpang.</p>
+              <p><strong>Proses:</strong> Kelas minoritas → cari tetangga terdekat → bikin data baru di antara mereka.</p>
               <p><strong>Output:</strong> Data training seimbang ({smoteTraining.length} data).</p>
             </div>
           </div>
 
           <div className="p-4 bg-white border border-slate-200">
-            <h4 className="text-sm font-semibold text-slate-900 mb-2">Mengapa output-nya begini?</h4>
+            <h4 className="text-sm font-semibold text-slate-900 mb-2">Kenapa harus diseimbangkan?</h4>
             <ul className="text-xs text-slate-600 space-y-1">
-              <li>• <strong>Sebelum SMOTE:</strong> Kelas "Belum Tahu" hanya 1-2 data → KNN akan sulit mengenali pola kelas ini.</li>
-              <li>• <strong>SMOTE membuat data SINTETIS</strong> (bukan duplikat!) dengan interpolasi antara sampel minoritas dan tetangganya.</li>
+              <li>• <strong>Sebelum SMOTE:</strong> Kelas "Belum Tahu" cuma 1-2 data → KNN bakal lebih sering nebak kelas mayoritas.</li>
+              <li>• <strong>SMOTE bikin data SINTETIS</strong> (bukan duplikat!) dengan interpolasi antara data minoritas dan tetangganya.</li>
               <li>• <strong>Rumus SMOTE:</strong> x_sintetis = x_i + random(0,1) × (x_nn - x_i)</li>
-              <li>• <strong>Sesudah SMOTE:</strong> Semua kelas memiliki jumlah data yang sama → model belajar adil.</li>
-              <li>• <strong>Sama dengan jurnal (hal. 130):</strong> "SMOTETomek sebagai metode resampling untuk mengatasi data yang mengandung noise dan masalah ketidakseimbangan kelas."</li>
+              <li>• <strong>Sesudah SMOTE:</strong> Semua kelas jumlahnya sama → KNN belajar adil.</li>
+              <li>• <strong>Sama kayak jurnal (hal. 130):</strong> "SMOTETomek sebagai metode resampling untuk mengatasi ketidakseimbangan kelas."</li>
             </ul>
           </div>
 
@@ -389,7 +387,7 @@ export default function ModelEvaluation() {
               x_sintetis = x_i + random(0,1) × (x_nn - x_i)
             </p>
             <p className="text-[10px] text-slate-400 mt-1">
-              x_i = sampel minoritas, x_nn = tetangga terdekat, random(0,1) = angka acak 0-1
+              x_i = data minoritas, x_nn = tetangga terdekatnya, random(0,1) = angka acak antara 0 dan 1.
             </p>
           </div>
         </div>
@@ -403,18 +401,18 @@ export default function ModelEvaluation() {
           <div className="p-4 bg-slate-50 border border-slate-200">
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
             <div className="text-xs text-slate-700 space-y-1">
-              <p><strong>Input:</strong> Data training seimbang ({smoteTraining.length} data) dengan nilai asli.</p>
-              <p><strong>Proses:</strong> Hitung min/max per fitur → terapkan rumus (x - min) / (max - min) ke SEMUA data.</p>
-              <p><strong>Output:</strong> Semua fitur bernilai antara 0 dan 1.</p>
+              <p><strong>Input:</strong> Data training seimbang ({smoteTraining.length} data) — nilainya masih mentah.</p>
+              <p><strong>Proses:</strong> Cari min/max tiap fitur → pakai rumus (x - min) / (max - min) ke semua data.</p>
+              <p><strong>Output:</strong> Semua fitur nilainya antara 0 dan 1.</p>
             </div>
           </div>
 
           <div className="p-4 bg-white border border-slate-200">
-            <h4 className="text-sm font-semibold text-slate-900 mb-2">Mengapa output-nya begini?</h4>
+            <h4 className="text-sm font-semibold text-slate-900 mb-2">Kenapa harus dinormalisasi?</h4>
             <ul className="text-xs text-slate-600 space-y-1">
-              <li>• <strong>Tanpa normalisasi:</strong> Umur (21-62) akan mendominasi jarak Euclidean dibanding Jenis Kelamin (0-1).</li>
-              <li>• <strong>Contoh:</strong> Selisih umur 40 vs 30 = 10, tapi selisih jenis kelamin 0 vs 1 = 1. Jarak umur 10x lebih besar!</li>
-              <li>• <strong>Min-Max menormalisasi</strong> semua fitur ke range [0,1] → semua fitur punya bobot yang adil.</li>
+              <li>• <strong>Tanpa normalisasi:</strong> Usia (21-62) bakal mendominasi jarak Euclidean dibanding Jenis Kelamin (0-1).</li>
+              <li>• <strong>Contoh:</strong> Selisih usia 40 vs 30 = 10, tapi selisih jenis kelamin 0 vs 1 = 1. Jarak usia 10x lebih besar!</li>
+              <li>• <strong>Min-Max bikin semua fitur setara</strong> — range-nya sama-sama 0 sampai 1.</li>
               <li>• <strong>Rumus:</strong> x_normalized = (x - x_min) / (x_max - x_min)</li>
             </ul>
           </div>
@@ -453,7 +451,7 @@ export default function ModelEvaluation() {
               x_normalized = (x - x_min) / (x_max - x_min)
             </p>
             <p className="text-[10px] text-slate-400 mt-1">
-              Output selalu antara 0 dan 1. Jika x = x_min → 0. Jika x = x_max → 1.
+              Kalau x = min → hasilnya 0. Kalau x = max → hasilnya 1. Kalau di tengah → antara 0 dan 1.
             </p>
           </div>
         </div>
@@ -465,15 +463,14 @@ export default function ModelEvaluation() {
       <Section title="Confusion Matrix" icon={Table2} defaultOpen={true}>
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Matriks 3×3 yang menunjukkan berapa banyak prediksi BENAR dan SALAH untuk setiap kelas.
-            Baris = label Aktual, Kolom = label Prediksi.
+            Tabel 3×3 yang nunjukin berapa banyak prediksi yang benar dan yang salah buat tiap kelas. Baris = label asli, Kolom = label prediksi.
           </p>
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-slate-100">
-                  <th className="p-3 text-left font-semibold text-slate-900 border border-slate-300">Aktual ↓ / Prediksi →</th>
+                  <th className="p-3 text-left font-semibold text-slate-900 border border-slate-300">Asli ↓ / Prediksi →</th>
                   {classNames.map((name, i) => (
                     <th key={i} className="p-3 text-center font-semibold text-slate-900 border border-slate-300">{name}</th>
                   ))}
@@ -501,11 +498,11 @@ export default function ModelEvaluation() {
 
           {/* Penjelasan */}
           <div className="p-4 bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Cara Membaca:</h4>
+            <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Cara bacanya:</h4>
             <ul className="text-xs text-slate-600 space-y-1">
-              <li>• <strong>Sel diagonal (gelap)</strong> = prediksi BENAR (TP)</li>
-              <li>• <strong>Sel off-diagonal (merah)</strong> = prediksi SALAH (FP/FN)</li>
-              <li>• Angka di diagonal / total = Accuracy</li>
+              <li>• <strong>Sel diagonal (gelap)</strong> = prediksi yang BENAR</li>
+              <li>• <strong>Sel off-diagonal (merah)</strong> = prediksi yang SALAH</li>
+              <li>• Semakin banyak di diagonal → semakin bagus modelnya</li>
             </ul>
           </div>
         </div>
@@ -549,12 +546,12 @@ export default function ModelEvaluation() {
 
           {/* Penjelasan Metrik */}
           <div className="p-4 bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Penjelasan Setiap Metrik:</h4>
+            <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Apa arti tiap metrik:</h4>
             <ul className="text-xs text-slate-600 space-y-1">
-              <li>• <strong>Accuracy ({(evaluation.accuracy * 100).toFixed(2)}%):</strong> Dari SEMUA prediksi, berapa yang BENAR? → {Math.round(evaluation.accuracy * split.test.length)} dari {split.test.length} data.</li>
-              <li>• <strong>Precision ({(evaluation.macroPrecision * 100).toFixed(2)}%):</strong> Dari yang diprediksi "Positif", berapa yang BENAR "Positif"? → Mengukur false alarm.</li>
-              <li>• <strong>Recall ({(evaluation.macroRecall * 100).toFixed(2)}%):</strong> Dari yang BENAR "Positif", berapa yang BERHASIL ditemukan? → Mengukur ketelitian deteksi.</li>
-              <li>• <strong>F1-Score ({(evaluation.macroF1Score * 100).toFixed(2)}%):</strong> Rata-rata harmonis Precision dan Recall → keseimbangan keduanya.</li>
+              <li>• <strong>Akurasi ({(evaluation.accuracy * 100).toFixed(2)}%):</strong> Dari SEMUA prediksi, berapa yang bener? {Math.round(evaluation.accuracy * split.test.length)} dari {split.test.length} data.</li>
+              <li>• <strong>Precision ({(evaluation.macroPrecision * 100).toFixed(2)}%):</strong> Kalau model bilang "positif", seberapa bisa dipercaya? Makin tinggi, makin sedikit false alarm.</li>
+              <li>• <strong>Recall ({(evaluation.macroRecall * 100).toFixed(2)}%):</strong> Dari semua yang memang positif, berapa yang berhasil ditangkap? Makin tinggi, makin sedikit yang terlewat.</li>
+              <li>• <strong>F1-Score ({(evaluation.macroF1Score * 100).toFixed(2)}%):</strong> Rata-rata harmonis Precision dan Recall — keseimbangan keduanya.</li>
             </ul>
           </div>
 
@@ -597,8 +594,7 @@ export default function ModelEvaluation() {
       <Section title="Optimasi Nilai K" icon={TrendingUp}>
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Cross-Validation (5-Fold) untuk menentukan K optimal berdasarkan F1-Score.
-            Uji K dari 1 sampai 15, pilih yang F1-Score tertinggi.
+            Pakai 5-Fold Cross-Validation buat cari K terbaik. Diuji dari K=1 sampai K=15, yang paling bagus F1-Score-nya, itulah yang kita pake.
           </p>
 
           {/* Grafik */}
@@ -616,7 +612,7 @@ export default function ModelEvaluation() {
 
           <div className="p-4 bg-slate-50 border border-slate-200">
             <p className="text-sm text-slate-700"><strong>K Optimal: {kOptimization.optimalK}</strong> — F1-Score {(kOptimization.optimalF1Score * 100).toFixed(2)}%</p>
-            <p className="text-xs text-slate-500 mt-1">K optimal = nilai K dengan F1-Score tertinggi dari 5-Fold Cross-Validation.</p>
+            <p className="text-xs text-slate-500 mt-1">Artinya, dengan K={kOptimization.optimalK}, model paling seimbang antara precision dan recall. Bisa kamu ganti di atas buat lihat bedanya.</p>
           </div>
         </div>
       </Section>
@@ -627,7 +623,7 @@ export default function ModelEvaluation() {
       <Section title="Korelasi Antar Fitur" icon={Table2}>
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Koefisien Korelasi Pearson — mengukur kekuatan hubungan linear antara dua variabel.
+            Korelasi Pearson — ngukur seberapa erat hubungan antara dua fitur. Nilainya antara -1 (terbalik sempurna) sampai +1 (sejajar sempurna). Kalau 0, berarti nggak ada hubungan.
           </p>
 
           <div className="overflow-x-auto">
@@ -665,11 +661,11 @@ export default function ModelEvaluation() {
           </div>
 
           <div className="p-4 bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Temuan Penting:</h4>
+            <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Yang menarik:</h4>
             <ul className="text-xs text-slate-600 space-y-1">
-              <li>• <strong>Status ODHIV ↔ Alasan Kunjungan:</strong> -0.86 → sangat kuat terbalik (satu naik, lainnya turun).</li>
-              <li>• <strong>Jenis Kelamin ↔ Status ODHIV:</strong> -0.30 → moderat.</li>
-              <li>• <strong>Umur ↔ Variabel lain:</strong> ~0 → hampir tidak berkorelasi.</li>
+              <li>• <strong>Status ODHIV ↔ Alasan Kunjungan:</strong> -0.86 → hubungannya kuat banget dan terbalik. Kalau alasan kunjungannya "Tes HIV", kemungkinan besar statusnya ODHIV.</li>
+              <li>• <strong>Jenis Kelamin ↔ Status ODHIV:</strong> -0.30 → hubungannya moderat.</li>
+              <li>• <strong>Umur ↔ Variabel lain:</strong> ~0 → hampir nggak ada hubungan. Usia nggak terlalu ngaruh ke prediksi.</li>
             </ul>
           </div>
         </div>
