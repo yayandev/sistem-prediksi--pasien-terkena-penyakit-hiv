@@ -12,29 +12,29 @@ Berdasarkan analisis perbandingan dengan jurnal referensi, terdapat **11 aspek**
 
 ### Aspek yang Sudah Sesuai
 
-| No | Aspek | Status |
-|----|-------|--------|
-| 1 | Algoritma KNN dengan Euclidean Distance | ✅ |
-| 2 | 4 input features (Umur, Jenis Kelamin, Kelompok Populasi, Alasan Kunjungan) | ✅ |
-| 3 | Output 3 kelas (0: Belum Tahu, 1: Bukan ODHIV, 2: ODHIV) | ✅ |
-| 4 | Normalisasi Min-Max | ✅ |
-| 5 | Klaim performa konsisten dengan jurnal | ✅ |
+| No  | Aspek                                                                       | Status |
+| --- | --------------------------------------------------------------------------- | ------ |
+| 1   | Algoritma KNN dengan Euclidean Distance                                     | ✅     |
+| 2   | 4 input features (Umur, Jenis Kelamin, Kelompok Populasi, Alasan Kunjungan) | ✅     |
+| 3   | Output 3 kelas (0: Belum Tahu, 1: Bukan ODHIV, 2: ODHIV)                    | ✅     |
+| 4   | Normalisasi Min-Max                                                         | ✅     |
+| 5   | Klaim performa konsisten dengan jurnal                                      | ✅     |
 
 ### Aspek yang Belum Sesuai
 
-| No | Aspek | Prioritas |
-|----|-------|-----------|
-| 1 | Tidak ada Train/Test Split (80/20) | Tinggi |
-| 2 | Tidak ada Confusion Matrix dari pengujian aktual | Tinggi |
-| 3 | Tidak ada Cross-Validation untuk optimasi K | Tinggi |
-| 4 | Metrik performa hardcoded (bukan dari komputasi aktual) | Tinggi |
-| 5 | Tidak ada penanganan class imbalance (SMOTETomek) | Tinggi |
-| 6 | Dataset hanya 23 data sintetis vs 2.205 data asli | Tinggi |
-| 7 | Tidak ada backend (PHP) dan database (MySQL) | Sedang |
-| 8 | Tidak ada autentikasi user (Register, Login) | Sedang |
-| 9 | Tidak ada CRUD data pasien/penyakit | Sedang |
-| 10 | Tidak ada UML Diagrams | Rendah |
-| 11 | Tidak ada analisis korelasi antar fitur | Rendah |
+| No  | Aspek                                                   | Prioritas |
+| --- | ------------------------------------------------------- | --------- |
+| 1   | Tidak ada Train/Test Split (80/20)                      | Tinggi    |
+| 2   | Tidak ada Confusion Matrix dari pengujian aktual        | Tinggi    |
+| 3   | Tidak ada Cross-Validation untuk optimasi K             | Tinggi    |
+| 4   | Metrik performa hardcoded (bukan dari komputasi aktual) | Tinggi    |
+| 5   | Tidak ada penanganan class imbalance (SMOTETomek)       | Tinggi    |
+| 6   | Dataset hanya 23 data sintetis vs 2.205 data asli       | Tinggi    |
+| 7   | Tidak ada backend (PHP) dan database (MySQL)            | Sedang    |
+| 8   | Tidak ada autentikasi user (Register, Login)            | Sedang    |
+| 9   | Tidak ada CRUD data pasien/penyakit                     | Sedang    |
+| 10  | Tidak ada UML Diagrams                                  | Rendah    |
+| 11  | Tidak ada analisis korelasi antar fitur                 | Rendah    |
 
 ---
 
@@ -46,12 +46,12 @@ Berdasarkan analisis perbandingan dengan jurnal referensi, terdapat **11 aspek**
 
 #### 1.1 Train/Test Split 80/20
 
-| Item | Detail |
-|------|--------|
-| File baru | `src/utils/splitting.ts` |
-| Deskripsi | Implementasi manual split data dengan shuffle + seed untuk reproducibility |
-| Algoritma | Acak data dengan seed tetap → ambil 80% pertama sebagai training, 20% sisanya sebagai testing |
-| Referensi jurnal | "20% dari data digunakan untuk testing, sedangkan 80% sisanya digunakan untuk training" |
+| Item             | Detail                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------- |
+| File baru        | `src/utils/splitting.ts`                                                                      |
+| Deskripsi        | Implementasi manual split data dengan shuffle + seed untuk reproducibility                    |
+| Algoritma        | Acak data dengan seed tetap → ambil 80% pertama sebagai training, 20% sisanya sebagai testing |
+| Referensi jurnal | "20% dari data digunakan untuk testing, sedangkan 80% sisanya digunakan untuk training"       |
 
 **Contoh implementasi:**
 
@@ -64,12 +64,12 @@ Berdasarkan analisis perbandingan dengan jurnal referensi, terdapat **11 aspek**
 
 #### 1.2 Confusion Matrix & Metrik Performa
 
-| Item | Detail |
-|------|--------|
-| Package baru | `ml-confusion-matrix` (npm) |
-| File baru | `src/utils/evaluation.ts` |
-| Deskripsi | Hitung confusion matrix dari hasil prediksi vs label aktual, lalu ekstrak accuracy, precision, recall, F1-score |
-| Output | Tabel confusion matrix + metrik per kelas + macro average |
+| Item         | Detail                                                                                                          |
+| ------------ | --------------------------------------------------------------------------------------------------------------- |
+| Package baru | `ml-confusion-matrix` (npm)                                                                                     |
+| File baru    | `src/utils/evaluation.ts`                                                                                       |
+| Deskripsi    | Hitung confusion matrix dari hasil prediksi vs label aktual, lalu ekstrak accuracy, precision, recall, F1-score |
+| Output       | Tabel confusion matrix + metrik per kelas + macro average                                                       |
 
 **Metrik yang dihitung:**
 
@@ -89,13 +89,13 @@ F1-Score (Macro Average): 84.45%
 
 #### 1.3 Cross-Validation untuk Optimasi K
 
-| Item | Detail |
-|------|--------|
-| Package baru | `ml-cross-validation` (npm) |
-| File baru | `src/utils/validation.ts` |
-| Deskripsi | K-Fold Cross-Validation untuk menemukan K optimal dari range tertentu |
-| Range K | 1 sampai 15 (atau sqrt(n) = floor(sqrt(23)) = 4) |
-| Metrik evaluasi | F1-Score (macro average) |
+| Item            | Detail                                                                |
+| --------------- | --------------------------------------------------------------------- |
+| Package baru    | `ml-cross-validation` (npm)                                           |
+| File baru       | `src/utils/validation.ts`                                             |
+| Deskripsi       | K-Fold Cross-Validation untuk menemukan K optimal dari range tertentu |
+| Range K         | 1 sampai 15 (atau sqrt(n) = floor(sqrt(23)) = 4)                      |
+| Metrik evaluasi | F1-Score (macro average)                                              |
 
 **Referensi jurnal:**
 
@@ -103,9 +103,9 @@ F1-Score (Macro Average): 84.45%
 
 #### 1.4 Tampilkan Metrik Aktual di UI
 
-| Item | Detail |
-|------|--------|
-| File ubah | `src/components/Documentation.tsx` |
+| Item      | Detail                                                                               |
+| --------- | ------------------------------------------------------------------------------------ |
+| File ubah | `src/components/Documentation.tsx`                                                   |
 | Deskripsi | Ganti hardcoded metrics (97.9%, 78.6%, dll) dengan hasil komputasi aktual dari model |
 
 **Sebelum:**
@@ -124,11 +124,11 @@ Presisi: [hasil aktual dari confusion matrix]
 
 #### 1.5 Tampilkan Confusion Matrix di UI
 
-| Item | Detail |
-|------|--------|
-| File ubah | `src/components/Documentation.tsx` |
-| Deskripsi | Tambahkan tabel confusion matrix di tab Performa |
-| Format | Tabel 3x3 (Aktual vs Prediksi) dengan warna untuk TP/TN/FP/FN |
+| Item      | Detail                                                        |
+| --------- | ------------------------------------------------------------- |
+| File ubah | `src/components/Documentation.tsx`                            |
+| Deskripsi | Tambahkan tabel confusion matrix di tab Performa              |
+| Format    | Tabel 3x3 (Aktual vs Prediksi) dengan warna untuk TP/TN/FP/FN |
 
 ---
 
@@ -138,12 +138,12 @@ Presisi: [hasil aktual dari confusion matrix]
 
 #### 2.1 SMOTE Sederhana
 
-| Item | Detail |
-|------|--------|
-| File baru | `src/utils/sMOTE.ts` |
-| Deskripsi | Implementasi manual SMOTE untuk kelas minoritas (status=0, hanya 2 data) |
+| Item      | Detail                                                                                                                                         |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| File baru | `src/utils/sMOTE.ts`                                                                                                                           |
+| Deskripsi | Implementasi manual SMOTE untuk kelas minoritas (status=0, hanya 2 data)                                                                       |
 | Algoritma | Untuk setiap sampel minoritas: cari K tetangga terdekat → interpolasi linear random antara sampel dan tetangga → generate sampel sintetis baru |
-| Target | Generate data sintetis hingga kelas minoritas seimbang dengan kelas mayoritas |
+| Target    | Generate data sintetis hingga kelas minoritas seimbang dengan kelas mayoritas                                                                  |
 
 **Catatan:** Tidak ada library JS mature untuk SMOTETomek. Implementasi manual SMOTE sudah cukup untuk tujuan edukasi. Tomek Links (penghapusan sampel borderline) bisa ditambahkan sebagai langkah opsional.
 
@@ -156,9 +156,9 @@ Sesudah: Belum Tahu=11, Bukan ODHIV=11, ODHIV=11 (target seimbang)
 
 #### 2.2 Tampilkan Distribusi Data
 
-| Item | Detail |
-|------|--------|
-| File ubah | `src/components/Documentation.tsx` |
+| Item      | Detail                                                                                          |
+| --------- | ----------------------------------------------------------------------------------------------- |
+| File ubah | `src/components/Documentation.tsx`                                                              |
 | Deskripsi | Tambahkan bar chart atau tabel yang menunjukkan jumlah data per kelas sebelum dan sesudah SMOTE |
 
 ---
@@ -169,17 +169,17 @@ Sesudah: Belum Tahu=11, Bukan ODHIV=11, ODHIV=11 (target seimbang)
 
 #### 3.1 Optimasi K Otomatis
 
-| Item | Detail |
-|------|--------|
-| File ubah | `src/utils/validation.ts`, `src/components/Predictor.tsx` |
+| Item      | Detail                                                                             |
+| --------- | ---------------------------------------------------------------------------------- |
+| File ubah | `src/utils/validation.ts`, `src/components/Predictor.tsx`                          |
 | Deskripsi | Cari K optimal dari range 1-N menggunakan cross-validation, tampilkan grafik elbow |
-| Output | K optimal yang dipilih + grafik F1-Score vs K |
+| Output    | K optimal yang dipilih + grafik F1-Score vs K                                      |
 
 #### 3.2 Tampilkan K Optimal di UI
 
-| Item | Detail |
-|------|--------|
-| File ubah | `src/components/Predictor.tsx` |
+| Item      | Detail                                                      |
+| --------- | ----------------------------------------------------------- |
+| File ubah | `src/components/Predictor.tsx`                              |
 | Deskripsi | Di UI form prediksi, tampilkan K yang dipilih dan alasannya |
 
 ---
@@ -190,35 +190,35 @@ Sesudah: Belum Tahu=11, Bukan ODHIV=11, ODHIV=11 (target seimbang)
 
 #### 4.1 Tab Evaluasi Model
 
-| Item | Detail |
-|------|--------|
-| File baru | `src/components/ModelEvaluation.tsx` |
-| File ubah | `src/App.tsx` |
+| Item      | Detail                                                                                                                |
+| --------- | --------------------------------------------------------------------------------------------------------------------- |
+| File baru | `src/components/ModelEvaluation.tsx`                                                                                  |
+| File ubah | `src/App.tsx`                                                                                                         |
 | Deskripsi | Tab baru "Evaluasi Model" yang menampilkan: confusion matrix, metrik per kelas, grafik K vs F1-score, distribusi data |
 
 #### 4.2 Grafik Distribusi Kelas
 
-| Item | Detail |
-|------|--------|
-| File ubah | `src/components/Documentation.tsx` |
+| Item      | Detail                                                      |
+| --------- | ----------------------------------------------------------- |
+| File ubah | `src/components/Documentation.tsx`                          |
 | Deskripsi | Bar chart jumlah data per kelas (sebelum dan sesudah SMOTE) |
 
 #### 4.3 Korelasi Antar Fitur
 
-| Item | Detail |
-|------|--------|
-| File ubah | `src/components/Documentation.tsx` |
-| Deskripsi | Tampilkan correlation matrix seperti di jurnal |
+| Item          | Detail                                                        |
+| ------------- | ------------------------------------------------------------- |
+| File ubah     | `src/components/Documentation.tsx`                            |
+| Deskripsi     | Tampilkan correlation matrix seperti di jurnal                |
 | Temuan jurnal | Status ODHIV ↔ Alasan Kunjungan: -0.86 (sangat kuat terbalik) |
 
 ---
 
 ## 3. Tech Stack yang Akan Ditambahkan
 
-| Package | Versi | Keperluan |
-|---------|-------|-----------|
+| Package               | Versi  | Keperluan                  |
+| --------------------- | ------ | -------------------------- |
 | `ml-confusion-matrix` | ^2.0.0 | Confusion matrix + metrics |
-| `ml-cross-validation` | ^1.3.0 | K-Fold Cross-Validation |
+| `ml-cross-validation` | ^1.3.0 | K-Fold Cross-Validation    |
 
 **Catatan:** SMOTE diimplementasi manual (tidak pakai library external) karena tidak ada library JS yang mature.
 
@@ -281,13 +281,13 @@ Phase 4 (UI/UX)
 
 ## 6. Estimasi Waktu
 
-| Phase | Estimasi | Keterangan |
-|-------|----------|------------|
-| Phase 1 | 1-2 jam | Core ML evaluation |
-| Phase 2 | 30-60 menit | SMOTE sederhana |
-| Phase 3 | 30 menit | Optimasi K |
-| Phase 4 | 1 jam | UI tambahan |
-| **Total** | **3-4 jam** | |
+| Phase     | Estimasi    | Keterangan         |
+| --------- | ----------- | ------------------ |
+| Phase 1   | 1-2 jam     | Core ML evaluation |
+| Phase 2   | 30-60 menit | SMOTE sederhana    |
+| Phase 3   | 30 menit    | Optimasi K         |
+| Phase 4   | 1 jam       | UI tambahan        |
+| **Total** | **3-4 jam** |                    |
 
 ---
 
