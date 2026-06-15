@@ -16,26 +16,10 @@ import { Users, BookOpen, GraduationCap, Heart } from 'lucide-react';
  * UPDATE NAMA DI SINI begitu nama dikirim.
  */
 const TEAM_MEMBERS = [
-  {
-    name: 'Yayan Faturrohman',
-    nim: '112421052',
-    role: 'Ketua Kelompok',
-  },
-  {
-    name: 'Muhammad Fernanda Putra',
-    nim: '112311024',
-    role: 'Anggota',
-  },
-  {
-    name: 'Dewi Marshanda H.',
-    nim: '112311001',
-    role: 'Anggota',
-  },
-  {
-    name: 'Rizky Ardiansyah',
-    nim: '112311010',
-    role: 'Anggota',
-  },
+  { name: 'Yayan Faturrohman', nim: '112421052' },
+  { name: 'Muhammad Fernanda Putra', nim: '112311024' },
+  { name: 'Dewi Marshanda H.', nim: '112311001' },
+  { name: 'Rizky Ardiansyah', nim: '112311010' },
 ];
 
 export default function About() {
@@ -106,7 +90,6 @@ export default function About() {
                 <div>
                   <div className="text-sm font-bold text-slate-900">{member.name}</div>
                   <div className="text-xs text-slate-500 font-mono">{member.nim}</div>
-                  <div className="text-xs text-slate-600 mt-1">{member.role}</div>
                 </div>
               </div>
             ))}
