@@ -27,7 +27,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Gagal login dengan Google');
     } finally {
@@ -55,7 +55,7 @@ export default function LoginPage() {
       } else {
         await registerWithEmail(email, password, name.trim());
       }
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Gagal';
       if (msg.includes('auth/invalid-credential') || msg.includes('auth/wrong-password')) {

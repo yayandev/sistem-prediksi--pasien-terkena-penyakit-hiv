@@ -32,7 +32,7 @@ export default function ProtectedRoute({ children, requiredRole }: Props) {
 
   // Cek role jika diminta
   if (requiredRole && userProfile && userProfile.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

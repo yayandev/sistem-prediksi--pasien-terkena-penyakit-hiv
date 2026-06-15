@@ -147,7 +147,7 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <NavLink
-          to="/prediksi"
+          to="/dashboard/prediksi"
           className="flex items-center gap-4 p-5 bg-slate-900 text-white hover:bg-slate-800 transition-colors group"
         >
           <Plus className="w-8 h-8 opacity-50 group-hover:opacity-100 transition-opacity" />
@@ -162,7 +162,7 @@ export default function Dashboard() {
           <ArrowRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
         </NavLink>
         <NavLink
-          to="/pasien"
+          to="/dashboard/pasien"
           className="flex items-center gap-4 p-5 border-2 border-slate-200 hover:border-slate-900 transition-colors group"
         >
           <Users className="w-8 h-8 text-slate-400 group-hover:text-slate-900 transition-colors" />
@@ -177,7 +177,7 @@ export default function Dashboard() {
           <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-slate-900 transition-colors" />
         </NavLink>
         <NavLink
-          to="/evaluasi"
+          to="/dashboard/evaluasi"
           className="flex items-center gap-4 p-5 border-2 border-slate-200 hover:border-slate-900 transition-colors group"
         >
           <Zap className="w-8 h-8 text-slate-400 group-hover:text-slate-900 transition-colors" />
@@ -335,7 +335,7 @@ export default function Dashboard() {
           </h2>
           {s.recentPredictions.length > 0 && (
             <NavLink
-              to="/pasien"
+              to="/dashboard/pasien"
               className="text-xs text-slate-400 hover:text-white transition-colors"
             >
               Lihat Semua →

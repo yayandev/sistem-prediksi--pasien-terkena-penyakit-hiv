@@ -76,7 +76,7 @@ export default function PatientDashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <NavLink to="/prediksi" className="group flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl hover:border-slate-900 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300 hover:-translate-y-0.5">
+        <NavLink to="/dashboard/prediksi" className="group flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl hover:border-slate-900 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300 hover:-translate-y-0.5">
           <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
             <Zap className="w-6 h-6 text-white" />
           </div>
@@ -87,7 +87,7 @@ export default function PatientDashboard() {
           <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-slate-900 group-hover:translate-x-1 transition-all" />
         </NavLink>
 
-        <NavLink to="/riwayat" className="group flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl hover:border-slate-900 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300 hover:-translate-y-0.5">
+        <NavLink to="/dashboard/riwayat" className="group flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl hover:border-slate-900 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300 hover:-translate-y-0.5">
           <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
             <History className="w-6 h-6" />
           </div>
@@ -98,7 +98,7 @@ export default function PatientDashboard() {
           <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-slate-900 group-hover:translate-x-1 transition-all" />
         </NavLink>
 
-        <NavLink to="/pengetahuan" className="group flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl hover:border-slate-900 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300 hover:-translate-y-0.5">
+        <NavLink to="/dashboard/pengetahuan" className="group flex items-center gap-4 p-6 bg-white border border-slate-200 rounded-2xl hover:border-slate-900 hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300 hover:-translate-y-0.5">
           <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors">
             <BookOpen className="w-6 h-6" />
           </div>
@@ -115,7 +115,7 @@ export default function PatientDashboard() {
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Prediksi Terakhir</h2>
           {predictions.length > 0 && (
-            <NavLink to="/riwayat" className="text-xs text-slate-400 hover:text-slate-900 font-semibold transition-colors">
+            <NavLink to="/dashboard/riwayat" className="text-xs text-slate-400 hover:text-slate-900 font-semibold transition-colors">
               Lihat Semua →
             </NavLink>
           )}

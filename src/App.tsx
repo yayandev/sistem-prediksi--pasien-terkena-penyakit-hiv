@@ -1,26 +1,26 @@
 /**
  * App.tsx
  * =======
- * Root component — React Router + Firebase Auth + Role-based routing.
+ * Root component — React Router + Firebase Auth + Sidebar Layout.
  *
- * / (public)    → LandingPage (belum login)
- * / (admin)     → Dashboard admin (stats, charts, CRUD)
- * / (patient)   → Dashboard pasien (quick actions, riwayat, tips)
- * /login        → LoginPage
- * /prediksi     → Multi-step wizard (all roles)
- * /riwayat      → Patient history (patient only)
- * /pasien       → Patient list (admin only)
- * /admin/users  → User management (admin only)
- * /evaluasi     → Model evaluation (admin only)
- * /pengetahuan  → Documentation (all roles)
- * /tentang      → About (public)
+ * / (public)           → LandingPage (belum login)
+ * /login               → LoginPage
+ * /dashboard           → Admin/Patient Dashboard (protected)
+ * /dashboard/prediksi  → Multi-step wizard (all roles)
+ * /dashboard/riwayat   → Patient history (patient only)
+ * /dashboard/pasien    → Patient list (admin only)
+ * /dashboard/admin/users → User management (admin only)
+ * /dashboard/evaluasi  → Model evaluation (admin only)
+ * /dashboard/pengetahuan → Documentation (all roles)
+ * /dashboard/tentang   → About (public)
  */
 
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
-import { Stethoscope, Menu, X, LogOut, User, Shield } from 'lucide-react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Menu, X } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import Sidebar from './components/Sidebar';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import AdminDashboard from './components/Dashboard';
@@ -33,50 +33,19 @@ import Documentation from './components/Documentation';
 import ModelEvaluation from './components/ModelEvaluation';
 import About from './components/About';
 
-function Layout() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+function AppLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, userProfile, signOut } = useAuth();
-
-  React.useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
+  const { user, userProfile } = useAuth();
+  const isAdmin = userProfile?.role === 'admin';
 
   const isLoginPage = location.pathname === '/login';
   const isLandingPage = location.pathname === '/' && !user;
-  const isAdmin = userProfile?.role === 'admin';
+  const isFullPage = isLoginPage || isLandingPage;
 
-  // Full-page layouts (no header/footer)
-  const fullPage = isLoginPage || isLandingPage;
-
-  // Nav items berdasarkan role
-  const navItems = user
-    ? isAdmin
-      ? [
-          { to: '/', label: 'Dashboard' },
-          { to: '/prediksi', label: 'Prediksi' },
-          { to: '/pasien', label: 'Pasien' },
-          { to: '/admin/users', label: 'Users' },
-          { to: '/evaluasi', label: 'Evaluasi' },
-          { to: '/pengetahuan', label: 'Pengetahuan' },
-          { to: '/tentang', label: 'Tentang' },
-        ]
-      : [
-          { to: '/', label: 'Beranda' },
-          { to: '/prediksi', label: 'Prediksi' },
-          { to: '/riwayat', label: 'Riwayat' },
-          { to: '/pengetahuan', label: 'Pengetahuan' },
-          { to: '/tentang', label: 'Tentang' },
-        ]
-    : [];
-
-  async function handleLogout() {
-    try { await signOut(); } catch { /* silent */ }
-  }
-
-  // Full-page: login & landing
-  if (fullPage) {
-    if (isLoginPage && user) return <Navigate to="/" replace />;
+  // Full-page: login & landing — no sidebar
+  if (isFullPage) {
+    if (isLoginPage && user) return <Navigate to="/dashboard" replace />;
     return (
       <div className="min-h-screen bg-white font-sans text-slate-800">
         <Routes>
@@ -87,117 +56,56 @@ function Layout() {
     );
   }
 
-  // App layout (with header/footer)
+  // App layout with sidebar
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-800 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-slate-300 sticky top-0 z-50 w-full bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-          <NavLink to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
-              <Stethoscope className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-semibold text-base sm:text-lg tracking-tight uppercase">VECTRA</span>
-          </NavLink>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/'}
-                className={({ isActive }) =>
-                  `px-4 py-2 text-xs font-semibold uppercase tracking-wide rounded-lg transition-colors ${
-                    isActive ? 'text-slate-900 bg-slate-100' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+      {/* Main area — offset by sidebar width on desktop */}
+      <div className="lg:pl-[260px]">
+        {/* Top bar (mobile only) */}
+        <header className="sticky top-0 z-40 bg-white border-b border-slate-200 lg:hidden">
+          <div className="flex items-center justify-between h-14 px-4">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 text-slate-600 hover:text-slate-900 transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <span className="font-semibold text-sm uppercase tracking-tight">VECTRA</span>
+            <div className="w-9" />
+          </div>
+        </header>
 
-          {/* Desktop User Info */}
-          {user && (
-            <div className="hidden md:flex items-center gap-3 ml-4">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                {isAdmin && <Shield className="w-3.5 h-3.5 text-amber-600" />}
-                <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full" />
-                  ) : (
-                    <User className="w-4 h-4 text-slate-500" />
-                  )}
-                </div>
-                <span className="max-w-[120px] truncate">{userProfile?.displayName || user.displayName || user.email}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 font-bold uppercase ${isAdmin ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {userProfile?.role || 'patient'}
-                </span>
-              </div>
-              <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Keluar">
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+        {/* Content */}
+        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+          <Routes>
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Navigate to={user ? '/dashboard' : '/'} replace />} />
+            <Route path="/dashboard" element={<ProtectedRoute>{isAdmin ? <AdminDashboard /> : <PatientDashboard />}</ProtectedRoute>} />
+            <Route path="/dashboard/prediksi" element={<ProtectedRoute><Predictor /></ProtectedRoute>} />
+            <Route path="/dashboard/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
+            <Route path="/dashboard/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
+            <Route path="/dashboard/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
+            <Route path="/dashboard/evaluasi" element={<ProtectedRoute requiredRole="admin"><ModelEvaluation /></ProtectedRoute>} />
+            <Route path="/dashboard/pengetahuan" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
+            <Route path="/dashboard/tentang" element={<About />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </main>
 
-          {/* Mobile Hamburger */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {/* Mobile Nav */}
-        {mobileMenuOpen && (
-          <nav className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/'}
-                className={({ isActive }) =>
-                  `block px-4 py-3 text-sm font-semibold uppercase tracking-wide rounded-lg transition-colors ${
-                    isActive ? 'text-slate-900 bg-slate-100' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-            {user && (
-              <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                <LogOut className="w-4 h-4" /> Keluar
-              </button>
-            )}
-          </nav>
-        )}
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
-        <Routes>
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/" element={<ProtectedRoute>{isAdmin ? <AdminDashboard /> : <PatientDashboard />}</ProtectedRoute>} />
-          <Route path="/prediksi" element={<ProtectedRoute><Predictor /></ProtectedRoute>} />
-          <Route path="/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
-          <Route path="/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
-          <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
-          <Route path="/evaluasi" element={<ProtectedRoute requiredRole="admin"><ModelEvaluation /></ProtectedRoute>} />
-          <Route path="/pengetahuan" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
-          <Route path="/tentang" element={<About />} />
-        </Routes>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 py-8 sm:py-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-sm text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
-          <span className="font-semibold uppercase tracking-widest text-[10px] sm:text-xs text-slate-400">&copy; {new Date().getFullYear()} Kelompok 5 — Universitas Banten Jaya</span>
-          <span className="text-[10px] sm:text-xs uppercase tracking-widest">Tugas Machine Learning &bull; Sistem Prediksi Pasien Terkena Penyakit HIV</span>
-        </div>
-      </footer>
+        {/* Footer */}
+        <footer className="border-t border-slate-200 py-8 sm:py-12 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 text-sm text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
+            <span className="font-semibold uppercase tracking-widest text-[10px] sm:text-xs text-slate-400">
+              &copy; {new Date().getFullYear()} Kelompok 5 — Universitas Banten Jaya
+            </span>
+            <span className="text-[10px] sm:text-xs uppercase tracking-widest">
+              Tugas Machine Learning &bull; Sistem Prediksi Pasien Terkena Penyakit HIV
+            </span>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
@@ -206,7 +114,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Layout />
+        <AppLayout />
       </AuthProvider>
     </BrowserRouter>
   );
