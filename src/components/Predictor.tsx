@@ -12,8 +12,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { addPrediction } from '../lib/firestore';
-import { predict, loadTrainingData, encodeQueryForSave } from '../ml/runner';
-import { ArrowLeft, ArrowRight, Zap, Check, AlertTriangle, Database, Save, Loader2, Trash2, Info, Target, BarChart3 } from 'lucide-react';
+import { predict, loadTrainingData, encodeQueryForSave, getTrainingStats } from '../ml/runner';
+import { ArrowLeft, ArrowRight, Zap, Check, AlertTriangle, Database, Save, Loader2, Trash2, Info, Target, BarChart3, Ruler } from 'lucide-react';
 import PredictionProcess from './PredictionProcess';
 
 interface PredictionResult {
@@ -88,11 +88,14 @@ export default function Predictor() {
   const [belumPernah, setBelumPernah] = useState(false);
   const [selectedK, setSelectedK] = useState(3);
   const [processing, setProcessing] = useState(false);
+  const [bounds, setBounds] = useState<{ min: number[]; max: number[] } | null>(null);
 
   useEffect(() => {
     async function init() {
       setLoadingTraining(true);
       await loadTrainingData();
+      const stats = getTrainingStats();
+      setBounds(stats.bounds);
       setTrainingDataLoaded(true);
       setLoadingTraining(false);
     }
@@ -587,32 +590,180 @@ export default function Predictor() {
             </div>
           </div>
 
-          {/* 6. Data Mentah (bisa di-collapse) */}
-          <details className="bg-white border border-slate-200 p-4 sm:p-6 group">
-            <summary className="text-xs font-bold text-slate-500 uppercase tracking-widest cursor-pointer select-none hover:text-slate-700 transition-colors">
-              Data Mentah Input & Normalisasi
-            </summary>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-2 px-2 font-bold text-slate-500 uppercase">Fitur</th>
-                    <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase">Nilai Asli</th>
-                    <th className="text-right py-2 px-2 font-bold text-slate-500 uppercase">Nilai Normal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {FEATURE_NAMES.map((name, i) => (
-                    <tr key={i} className="border-b border-slate-50">
-                      <td className="py-1.5 px-2 text-slate-600">{name}</td>
-                      <td className="py-1.5 px-2 text-right font-mono text-slate-700">{result.queryRaw[i]}</td>
-                      <td className="py-1.5 px-2 text-right font-mono text-slate-500">{result.queryNormalized[i].toFixed(4)}</td>
+          {/* 6. Alur Perhitungan KNN — Step-by-step */}
+          <div className="bg-white border-2 border-slate-900 p-6 sm:p-8">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-6 flex items-center gap-2">
+              <Ruler className="w-4 h-4" />
+              Alur Perhitungan KNN
+            </h3>
+
+            {/* Step 1: Input → Encode */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">1</span>
+                <h4 className="text-sm font-bold text-slate-900">Encoding Input</h4>
+              </div>
+              <p className="text-xs text-slate-500 mb-3 ml-8">Nilai string dari form di-encode ke angka menggunakan LabelEncoder (alphabetical sort) dari data training.</p>
+              <div className="ml-8 overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase">Fitur</th>
+                      <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase">Input</th>
+                      <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Encoded</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {FEATURE_NAMES.map((name, i) => (
+                      <tr key={i} className="border-b border-slate-50">
+                        <td className="py-1 px-2 text-slate-600">{name}</td>
+                        <td className="py-1 px-2 text-slate-700 font-mono">{result.queryRaw[i]}</td>
+                        <td className="py-1 px-2 text-right font-mono text-slate-500">{result.queryRaw[i]}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </details>
+
+            {/* Step 2: Normalisasi */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">2</span>
+                <h4 className="text-sm font-bold text-slate-900">Normalisasi Min-Max</h4>
+              </div>
+              <p className="text-xs text-slate-500 mb-2 ml-8">Rumus: <code className="bg-slate-100 px-1 rounded">x' = (x - min) / (max - min)</code> → hasil di-clamp ke [0, 1]</p>
+              {bounds && (
+                <div className="ml-8 overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase">Fitur</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Nilai</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Min</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Max</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Normal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {FEATURE_NAMES.map((name, i) => {
+                        const raw = result.queryRaw[i];
+                        const min = bounds.min[i];
+                        const max = bounds.max[i];
+                        const range = max - min;
+                        const norm = range === 0 ? 0 : Math.min(1, Math.max(0, (raw - min) / range));
+                        return (
+                          <tr key={i} className="border-b border-slate-50">
+                            <td className="py-1 px-2 text-slate-600">{name}</td>
+                            <td className="py-1 px-2 text-right font-mono text-slate-700">{raw}</td>
+                            <td className="py-1 px-2 text-right font-mono text-slate-400">{min}</td>
+                            <td className="py-1 px-2 text-right font-mono text-slate-400">{max}</td>
+                            <td className="py-1 px-2 text-right font-mono text-slate-900 font-bold">{norm.toFixed(4)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Step 3: Euclidean Distance per Tetangga */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">3</span>
+                <h4 className="text-sm font-bold text-slate-900">Euclidean Distance</h4>
+              </div>
+              <p className="text-xs text-slate-500 mb-3 ml-8">d(Q, T) = &radic;&Sigma;(Q<sub>i</sub> - T<sub>i</sub>)&sup2; untuk semua 13 fitur</p>
+              <div className="ml-8 space-y-3">
+                {result.neighbors.map((n) => {
+                  const perFeature = result.queryNormalized.map((qVal, featIdx) => {
+                    const tVal = n.features[featIdx];
+                    const diff = qVal - tVal;
+                    return { feature: FEATURE_NAMES[featIdx], qVal, tVal, diff, sq: diff * diff };
+                  });
+                  const sumSq = perFeature.reduce((s, f) => s + f.sq, 0);
+                  return (
+                    <details key={n.rank} className="border border-slate-200 rounded-xl overflow-hidden">
+                      <summary className="px-4 py-3 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors text-xs font-bold text-slate-700 flex items-center justify-between">
+                        <span>Tetangga #{n.rank} — {n.labelName}</span>
+                        <span className="font-mono">d = {n.distance.toFixed(4)}</span>
+                      </summary>
+                      <div className="p-4 overflow-x-auto">
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr className="border-b border-slate-200">
+                              <th className="text-left py-1 px-2 font-bold text-slate-500">Fitur</th>
+                              <th className="text-right py-1 px-2 font-bold text-slate-500">Q (Query)</th>
+                              <th className="text-right py-1 px-2 font-bold text-slate-500">T (Tetangga)</th>
+                              <th className="text-right py-1 px-2 font-bold text-slate-500">Q - T</th>
+                              <th className="text-right py-1 px-2 font-bold text-slate-500">(Q - T)&sup2;</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {perFeature.map((f, fi) => (
+                              <tr key={fi} className="border-b border-slate-50">
+                                <td className="py-1 px-2 text-slate-600">{f.feature}</td>
+                                <td className="py-1 px-2 text-right font-mono text-slate-700">{f.qVal.toFixed(4)}</td>
+                                <td className="py-1 px-2 text-right font-mono text-slate-700">{f.tVal.toFixed(4)}</td>
+                                <td className="py-1 px-2 text-right font-mono text-slate-500">{f.diff.toFixed(4)}</td>
+                                <td className="py-1 px-2 text-right font-mono text-slate-900 font-bold">{f.sq.toFixed(4)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="border-t-2 border-slate-300 font-bold">
+                              <td colSpan={4} className="py-1.5 px-2 text-right text-slate-700">&Sigma;(Q - T)&sup2;</td>
+                              <td className="py-1.5 px-2 text-right font-mono text-slate-900">{sumSq.toFixed(4)}</td>
+                            </tr>
+                            <tr className="font-bold">
+                              <td colSpan={4} className="py-1.5 px-2 text-right text-slate-700">d = &radic;{sumSq.toFixed(4)}</td>
+                              <td className="py-1.5 px-2 text-right font-mono text-slate-900 text-sm">{n.distance.toFixed(4)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Step 4: Majority Voting */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">4</span>
+                <h4 className="text-sm font-bold text-slate-900">Majority Voting</h4>
+              </div>
+              <p className="text-xs text-slate-500 mb-3 ml-8">Kelas dengan suara terbanyak dari {result.kUsed} tetangga menjadi hasil prediksi.</p>
+              <div className="ml-8 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {result.neighbors.map((n) => (
+                    <div key={n.rank} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold ${
+                      n.label === result.predictedClass
+                        ? 'border-slate-900 bg-slate-900 text-white'
+                        : 'border-slate-200 bg-white text-slate-600'
+                    }`}>
+                      #{n.rank} → <span className={`w-2 h-2 rounded-full ${n.label === 0 ? 'bg-green-400' : n.label === 1 ? 'bg-slate-400' : 'bg-red-400'}`} /> {n.labelName}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-slate-600">
+                  Hasil: {Object.entries(result.votes).map(([cls, count]) => (
+                    <span key={cls} className="mr-3">
+                      <span className={`font-bold ${Number(cls) === result.predictedClass ? 'text-slate-900 underline' : 'text-slate-500'}`}>
+                        {CLASS_LABELS[Number(cls)]}
+                      </span>
+                      {' '}= {count} suara
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-2 text-xs font-bold text-slate-900">
+                  → Prediksi: {result.predictedLabel} ({result.votes[result.predictedClass]}/{result.kUsed} suara, {((result.votes[result.predictedClass] / result.kUsed) * 100).toFixed(0)}%)
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Save Button */}
           {user && (

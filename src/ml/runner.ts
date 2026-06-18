@@ -116,7 +116,7 @@ export async function reloadTrainingData(): Promise<void> {
 }
 
 export function getTrainingStats() {
-  return { totalSamples: totalTrainSamples, featureCount: 13, classLabels: CLASS_LABELS };
+  return { totalSamples: totalTrainSamples, featureCount: 13, classLabels: CLASS_LABELS, bounds };
 }
 
 /**
