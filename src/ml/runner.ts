@@ -177,6 +177,7 @@ export interface PredictionResult {
   votes: Record<number, number>;
   votePercentages: Record<number, number>;
   queryRaw: number[];
+  queryRawStrings: string[];
   queryNormalized: number[];
   featureDistances: Array<{ feature: string; contribution: number }>;
   kUsed: number;
@@ -248,6 +249,21 @@ export function predict(features: QueryFeatures, k: number = 3): PredictionResul
     votes: pred.voting,
     votePercentages,
     queryRaw,
+    queryRawStrings: [
+      String(features.umur),
+      features.jenis_kelamin || '-',
+      features.kelompok_populasi || '-',
+      features.alasan_kunjungan || '-',
+      features.riwayat_tes_hiv || '-',
+      features.riwayat_ims || '-',
+      String(features.jumlah_pasangan_seksual),
+      features.penggunaan_kondom || '-',
+      features.penggunaan_napza_suntik || '-',
+      features.status_pernikahan || '-',
+      String(features.usia_pertama_hubungan),
+      features.terapi_arv || '-',
+      features.gejala_klinis || '-',
+    ],
     queryNormalized: queryNorm,
     featureDistances,
     kUsed: k,

@@ -24,6 +24,7 @@ interface PredictionResult {
   votes: Record<number, number>;
   votePercentages: Record<number, number>;
   queryRaw: number[];
+  queryRawStrings: string[];
   queryNormalized: number[];
   featureDistances: Array<{ feature: string; contribution: number }>;
   kUsed: number;
@@ -609,7 +610,7 @@ export default function Predictor() {
                   <thead>
                     <tr className="border-b border-slate-200">
                       <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase">Fitur</th>
-                      <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase">Input</th>
+                      <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase">Input (Asli)</th>
                       <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Encoded</th>
                     </tr>
                   </thead>
@@ -617,8 +618,8 @@ export default function Predictor() {
                     {FEATURE_NAMES.map((name, i) => (
                       <tr key={i} className="border-b border-slate-50">
                         <td className="py-1 px-2 text-slate-600">{name}</td>
-                        <td className="py-1 px-2 text-slate-700 font-mono">{result.queryRaw[i]}</td>
-                        <td className="py-1 px-2 text-right font-mono text-slate-500">{result.queryRaw[i]}</td>
+                        <td className="py-1 px-2 text-slate-700 font-mono">{result.queryRawStrings[i]}</td>
+                        <td className="py-1 px-2 text-right font-mono text-slate-900 font-bold">{result.queryRaw[i]}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -639,10 +640,11 @@ export default function Predictor() {
                     <thead>
                       <tr className="border-b border-slate-200">
                         <th className="text-left py-1.5 px-2 font-bold text-slate-500 uppercase">Fitur</th>
-                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Nilai</th>
-                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Min</th>
-                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Max</th>
-                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Normal</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">x</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">min</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">max</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">Rumus</th>
+                        <th className="text-right py-1.5 px-2 font-bold text-slate-500 uppercase">x'</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -652,12 +654,16 @@ export default function Predictor() {
                         const max = bounds.max[i];
                         const range = max - min;
                         const norm = range === 0 ? 0 : Math.min(1, Math.max(0, (raw - min) / range));
+                        const formula = range === 0
+                          ? `range=0 → 0`
+                          : `(${raw} - ${min}) / (${max} - ${min}) = ${(raw - min).toFixed(2)} / ${range.toFixed(2)}`;
                         return (
                           <tr key={i} className="border-b border-slate-50">
                             <td className="py-1 px-2 text-slate-600">{name}</td>
                             <td className="py-1 px-2 text-right font-mono text-slate-700">{raw}</td>
                             <td className="py-1 px-2 text-right font-mono text-slate-400">{min}</td>
                             <td className="py-1 px-2 text-right font-mono text-slate-400">{max}</td>
+                            <td className="py-1 px-2 text-right font-mono text-slate-500 text-[10px]">{formula}</td>
                             <td className="py-1 px-2 text-right font-mono text-slate-900 font-bold">{norm.toFixed(4)}</td>
                           </tr>
                         );
