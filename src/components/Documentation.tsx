@@ -530,7 +530,7 @@ function PerformaContent() {
   // Hitung metrik aktual dari data
   const metrics = useMemo(() => {
     try {
-      const encoded = runFullPreprocessing(rawDataset).encodedData;
+      const encoded = runFullPreprocessing(rawDataset).encodedBeforeSmote;
       return evaluateModel(encoded, 3, 42);
     } catch {
       return null;

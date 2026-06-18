@@ -5,7 +5,7 @@
  * Menampilkan ringkasan statistik, distribusi kelas, grafik prediksi terakhir, dan quick actions.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -27,6 +27,9 @@ import {
   importSeedData,
 } from "../lib/firestore";
 import { SEED_PATIENTS } from "../lib/seedData";
+import { runFullPreprocessing } from "../utils/preprocessing";
+import { evaluateModel } from "../utils/evaluation";
+import rawDataset from "../data/raw_hiv_dataset.json";
 
 const CLASS_COLORS: Record<string, string> = {
   ODHIV: "bg-red-500",
@@ -41,6 +44,16 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [importing, setImporting] = useState(false);
   const [imported, setImported] = useState(false);
+
+  const modelAccuracy = useMemo(() => {
+    try {
+      const preprocessing = runFullPreprocessing(rawDataset);
+      const evaluation = evaluateModel(preprocessing.encodedBeforeSmote, 3, 42);
+      return (evaluation.accuracy * 100).toFixed(1) + '%';
+    } catch {
+      return '—';
+    }
+  }, []);
 
   useEffect(() => {
     loadStats();
@@ -132,7 +145,7 @@ export default function Dashboard() {
         <StatCard
           icon={Activity}
           label="Akurasi Model"
-          value="90.5%"
+          value={modelAccuracy}
           sub="K=3, 5-Fold CV"
         />
         <StatCard
