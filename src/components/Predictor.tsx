@@ -595,16 +595,43 @@ export default function Predictor() {
           <div className="bg-white border-2 border-slate-900 p-6 sm:p-8">
             <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-3 mb-6 flex items-center gap-2">
               <Ruler className="w-4 h-4" />
-              Alur Perhitungan KNN
+              Alur Perhitungan KNN — Rumus Lengkap
             </h3>
 
-            {/* Step 1: Input → Encode */}
-            <div className="mb-6">
+            {/* ===== STEP 1: ENCODING ===== */}
+            <div className="mb-8">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">1</span>
-                <h4 className="text-sm font-bold text-slate-900">Encoding Input</h4>
+                <h4 className="text-sm font-bold text-slate-900">LabelEncoder — Encoding Kategorikal ke Numerik</h4>
               </div>
-              <p className="text-xs text-slate-500 mb-3 ml-8">Nilai string dari form di-encode ke angka menggunakan LabelEncoder (alphabetical sort) dari data training.</p>
+
+              {/* Rumus */}
+              <div className="ml-8 mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-bold text-slate-700 mb-2">Rumus:</p>
+                <div className="bg-white rounded-lg p-3 border border-slate-100 mb-3">
+                  <code className="text-xs text-slate-800 font-mono">
+                    encoded_value = index(sorted_unique_classes).indexOf(input_string)
+                  </code>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Setiap nilai unik pada suatu fitur kategorikal diurutkan secara <strong>alfabetis</strong>, lalu mendapat indeks mulai dari 0.
+                  Proses ini diperlukan karena KNN hanya bisa bekerja dengan angka, bukan teks.
+                </p>
+              </div>
+
+              {/* Contoh */}
+              <div className="ml-8 mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-bold text-slate-700 mb-2">Contoh pada fitur "Jenis Kelamin":</p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <span className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-mono text-slate-600">Urutan alfabet: Laki-laki, Perempuan</span>
+                </div>
+                <div className="text-[11px] text-slate-600 space-y-0.5">
+                  <p>→ <strong>Laki-laki</strong> = indeks ke-0 = <code className="bg-white px-1 rounded font-bold text-slate-900">0</code></p>
+                  <p>→ <strong>Perempuan</strong> = indeks ke-1 = <code className="bg-white px-1 rounded font-bold text-slate-900">1</code></p>
+                </div>
+              </div>
+
+              {/* Tabel */}
               <div className="ml-8 overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
@@ -627,13 +654,38 @@ export default function Predictor() {
               </div>
             </div>
 
-            {/* Step 2: Normalisasi */}
-            <div className="mb-6">
+            {/* ===== STEP 2: NORMALISASI ===== */}
+            <div className="mb-8">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">2</span>
-                <h4 className="text-sm font-bold text-slate-900">Normalisasi Min-Max</h4>
+                <h4 className="text-sm font-bold text-slate-900">Min-Max Normalization</h4>
               </div>
-              <p className="text-xs text-slate-500 mb-2 ml-8">Rumus: <code className="bg-slate-100 px-1 rounded">x' = (x - min) / (max - min)</code> → hasil di-clamp ke [0, 1]</p>
+
+              {/* Rumus */}
+              <div className="ml-8 mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-bold text-slate-700 mb-2">Rumus:</p>
+                <div className="bg-white rounded-lg p-3 border border-slate-100 mb-3">
+                  <code className="text-xs text-slate-800 font-mono">
+                    x' = (x - min) / (max - min)
+                  </code>
+                </div>
+                <p className="text-xs font-bold text-slate-700 mb-1">Keterangan simbol:</p>
+                <div className="text-[11px] text-slate-600 space-y-0.5 mb-3">
+                  <p><code className="bg-white px-1 rounded font-bold">x'</code> = nilai fitur setelah normalisasi (rentang 0 s/d 1)</p>
+                  <p><code className="bg-white px-1 rounded font-bold">x</code> = nilai fitur asli (sebelum normalisasi)</p>
+                  <p><code className="bg-white px-1 rounded font-bold">min</code> = nilai minimum pada fitur tersebut di seluruh data training</p>
+                  <p><code className="bg-white px-1 rounded font-bold">max</code> = nilai maximum pada fitur tersebut di seluruh data training</p>
+                  <p><code className="bg-white px-1 rounded font-bold">(max - min)</code> = range / rentang nilai fitur</p>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <strong>Tujuan:</strong> Agar semua fitur memiliki skala yang sama (0–1), sehingga fitur dengan angka besar (misal: Umur=50) tidak mendominasi jarak dibanding fitur kecil (misal: jumlah kondom=1).
+                </p>
+                <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
+                  <strong>Clamp:</strong> Jika hasil normalisasi &lt; 0 atau &gt; 1, maka dibatasi ke 0 atau 1 (mencegah data outlier di luar range training).
+                </p>
+              </div>
+
+              {/* Tabel */}
               {bounds && (
                 <div className="ml-8 overflow-x-auto">
                   <table className="w-full text-xs">
@@ -674,13 +726,71 @@ export default function Predictor() {
               )}
             </div>
 
-            {/* Step 3: Euclidean Distance per Tetangga */}
-            <div className="mb-6">
+            {/* ===== STEP 3: EUCLIDEAN DISTANCE ===== */}
+            <div className="mb-8">
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">3</span>
-                <h4 className="text-sm font-bold text-slate-900">Euclidean Distance</h4>
+                <h4 className="text-sm font-bold text-slate-900">Euclidean Distance (Jarak Euclidean)</h4>
               </div>
-              <p className="text-xs text-slate-500 mb-3 ml-8">d(Q, T) = &radic;&Sigma;(Q<sub>i</sub> - T<sub>i</sub>)&sup2; untuk semua 13 fitur</p>
+
+              {/* Rumus */}
+              <div className="ml-8 mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-bold text-slate-700 mb-2">Rumus umum:</p>
+                <div className="bg-white rounded-lg p-3 border border-slate-100 mb-3">
+                  <code className="text-xs text-slate-800 font-mono leading-relaxed block">
+                    d(Q, T) = &radic;( (Q<sub>1</sub> - T<sub>1</sub>)&sup2; + (Q<sub>2</sub> - T<sub>2</sub>)&sup2; + ... + (Q<sub>n</sub> - T<sub>n</sub>)&sup2; )
+                  </code>
+                  <code className="text-xs text-slate-800 font-mono block mt-1">
+                    d(Q, T) = &radic;&Sigma;<sub>i=1..n</sub> (Q<sub>i</sub> - T<sub>i</sub>)&sup2;
+                  </code>
+                </div>
+                <p className="text-xs font-bold text-slate-700 mb-1">Keterangan simbol:</p>
+                <div className="text-[11px] text-slate-600 space-y-0.5 mb-3">
+                  <p><code className="bg-white px-1 rounded font-bold">d(Q, T)</code> = jarak Euclidean antara data query (Q) dan data tetangga (T)</p>
+                  <p><code className="bg-white px-1 rounded font-bold">Q</code> = data pasien yang akan diprediksi (query input, sudah dinormalisasi)</p>
+                  <p><code className="bg-white px-1 rounded font-bold">T</code> = data tetangga dari data training (sudah dinormalisasi)</p>
+                  <p><code className="bg-white px-1 rounded font-bold">Q<sub>i</sub></code> = nilai fitur ke-i pada data query</p>
+                  <p><code className="bg-white px-1 rounded font-bold">T<sub>i</sub></code> = nilai fitur ke-i pada data tetangga</p>
+                  <p><code className="bg-white px-1 rounded font-bold">n</code> = jumlah total fitur = 13</p>
+                  <p><code className="bg-white px-1 rounded font-bold">(Q<sub>i</sub> - T<sub>i</sub>)</code> = selisih (beda) nilai fitur ke-i antara query dan tetangga</p>
+                  <p><code className="bg-white px-1 rounded font-bold">(Q<sub>i</sub> - T<sub>i</sub>)&sup2;</code> = kuadrat dari selisih (membuat semua nilai positif & menonjolkan perbedaan besar)</p>
+                  <p><code className="bg-white px-1 rounded font-bold">&Sigma;</code> = simbol penjumlahan (sigma) — menjumlahkan semua kuadrat selisih dari fitur ke-1 sampai ke-n</p>
+                  <p><code className="bg-white px-1 rounded font-bold">&radic;</code> = simbol akar kuadrat — mengembalikan satuan ke skala asli</p>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <strong>Interpretasi:</strong> Semakin <strong>kecil</strong> nilai d, semakin <strong>mirip</strong> data pasien dengan tetangga tersebut.
+                  Semakin <strong>besar</strong> nilai d, semakin <strong>berbeda</strong> keduanya.
+                </p>
+              </div>
+
+              {/* Contoh perhitungan manual */}
+              <div className="ml-8 mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-bold text-slate-700 mb-2">Contoh perhitungan manual (Tetangga #{result.neighbors[0]?.rank}):</p>
+                {result.neighbors[0] && (() => {
+                  const n = result.neighbors[0];
+                  const f0q = result.queryNormalized[0];
+                  const f0t = n.features[0];
+                  const f1q = result.queryNormalized[1];
+                  const f1t = n.features[1];
+                  const sq0 = (f0q - f0t) * (f0q - f0t);
+                  const sq1 = (f1q - f1t) * (f1q - f1t);
+                  return (
+                    <div className="text-[11px] text-slate-600 space-y-1.5 font-mono">
+                      <p>d = &radic;( (Q<sub>1</sub>-T<sub>1</sub>)&sup2; + (Q<sub>2</sub>-T<sub>2</sub>)&sup2; + ... + (Q<sub>13</sub>-T<sub>13</sub>)&sup2; )</p>
+                      <p>d = &radic;( ({f0q.toFixed(4)} - {f0t.toFixed(4)})&sup2; + ({f1q.toFixed(4)} - {f1t.toFixed(4)})&sup2; + ... )</p>
+                      <p>d = &radic;( ({(f0q - f0t).toFixed(4)})&sup2; + ({(f1q - f1t).toFixed(4)})&sup2; + ... )</p>
+                      <p>d = &radic;( {sq0.toFixed(4)} + {sq1.toFixed(4)} + ... )</p>
+                      <p>d = &radic;( ... )</p>
+                      <p className="font-bold text-slate-900">d = {n.distance.toFixed(4)}</p>
+                    </div>
+                  );
+                })()}
+                <p className="text-[11px] text-slate-500 mt-2">
+                  Lihat rincian lengkap per fitur dengan menekan tombol detail di bawah.
+                </p>
+              </div>
+
+              {/* Detail per tetangga */}
               <div className="ml-8 space-y-3">
                 {result.neighbors.map((n) => {
                   const perFeature = result.queryNormalized.map((qVal, featIdx) => {
@@ -693,17 +803,17 @@ export default function Predictor() {
                     <details key={n.rank} className="border border-slate-200 rounded-xl overflow-hidden">
                       <summary className="px-4 py-3 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors text-xs font-bold text-slate-700 flex items-center justify-between">
                         <span>Tetangga #{n.rank} — {n.labelName}</span>
-                        <span className="font-mono">d = {n.distance.toFixed(4)}</span>
+                        <span className="font-mono">d = &radic;{sumSq.toFixed(4)} = {n.distance.toFixed(4)}</span>
                       </summary>
                       <div className="p-4 overflow-x-auto">
                         <table className="w-full text-[11px]">
                           <thead>
                             <tr className="border-b border-slate-200">
                               <th className="text-left py-1 px-2 font-bold text-slate-500">Fitur</th>
-                              <th className="text-right py-1 px-2 font-bold text-slate-500">Q (Query)</th>
-                              <th className="text-right py-1 px-2 font-bold text-slate-500">T (Tetangga)</th>
-                              <th className="text-right py-1 px-2 font-bold text-slate-500">Q - T</th>
-                              <th className="text-right py-1 px-2 font-bold text-slate-500">(Q - T)&sup2;</th>
+                              <th className="text-right py-1 px-2 font-bold text-slate-500">Q<sub>i</sub> (Query)</th>
+                              <th className="text-right py-1 px-2 font-bold text-slate-500">T<sub>i</sub> (Tetangga)</th>
+                              <th className="text-right py-1 px-2 font-bold text-slate-500">Q<sub>i</sub> - T<sub>i</sub></th>
+                              <th className="text-right py-1 px-2 font-bold text-slate-500">(Q<sub>i</sub> - T<sub>i</sub>)&sup2;</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -719,7 +829,7 @@ export default function Predictor() {
                           </tbody>
                           <tfoot>
                             <tr className="border-t-2 border-slate-300 font-bold">
-                              <td colSpan={4} className="py-1.5 px-2 text-right text-slate-700">&Sigma;(Q - T)&sup2;</td>
+                              <td colSpan={4} className="py-1.5 px-2 text-right text-slate-700">&Sigma;(Q<sub>i</sub> - T<sub>i</sub>)&sup2;</td>
                               <td className="py-1.5 px-2 text-right font-mono text-slate-900">{sumSq.toFixed(4)}</td>
                             </tr>
                             <tr className="font-bold">
@@ -735,15 +845,43 @@ export default function Predictor() {
               </div>
             </div>
 
-            {/* Step 4: Majority Voting */}
+            {/* ===== STEP 4: MAJORITY VOTING ===== */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">4</span>
-                <h4 className="text-sm font-bold text-slate-900">Majority Voting</h4>
+                <h4 className="text-sm font-bold text-slate-900">Majority Voting (Pemungutan Suara Mayoritas)</h4>
               </div>
-              <p className="text-xs text-slate-500 mb-3 ml-8">Kelas dengan suara terbanyak dari {result.kUsed} tetangga menjadi hasil prediksi.</p>
+
+              {/* Rumus */}
+              <div className="ml-8 mb-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <p className="text-xs font-bold text-slate-700 mb-2">Rumus:</p>
+                <div className="bg-white rounded-lg p-3 border border-slate-100 mb-3">
+                  <code className="text-xs text-slate-800 font-mono block">
+                    prediksi = argmax<sub>c</sub> ( jumlah_tetangga_kelas_c )
+                  </code>
+                  <code className="text-xs text-slate-800 font-mono block mt-1">
+                    Confidence = jumlah_suara_kelas_pemenang / K
+                  </code>
+                </div>
+                <p className="text-xs font-bold text-slate-700 mb-1">Keterangan simbol:</p>
+                <div className="text-[11px] text-slate-600 space-y-0.5 mb-3">
+                  <p><code className="bg-white px-1 rounded font-bold">argmax</code> = mencari nilai kelas (c) yang menghasilkan jumlah suara terbanyak</p>
+                  <p><code className="bg-white px-1 rounded font-bold">c</code> = kelas/kategori (0 = Belum Tahu, 1 = Bukan ODHIV, 2 = ODHIV)</p>
+                  <p><code className="bg-white px-1 rounded font-bold">jumlah_tetangga_kelas_c</code> = berapa banyak tetangga yang memiliki label kelas c</p>
+                  <p><code className="bg-white px-1 rounded font-bold">K</code> = jumlah tetangga terdekat yang dipertimbangkan (parameter K)</p>
+                  <p><code className="bg-white px-1 rounded font-bold">Confidence</code> = tingkat kepercayaan prediksi (0% s/d 100%)</p>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  <strong>Cara kerja:</strong> Hitung berapa kali muncul setiap kelas di antara K tetangga terdekat.
+                  Kelas dengan <strong>jumlah suara terbanyak</strong> menjadi hasil prediksi.
+                  Jika terjadi <strong>tie</strong> (jumlah suara sama), maka dipilih kelas yang memiliki <strong>total jarak paling kecil</strong> dari query.
+                </p>
+              </div>
+
+              {/* Voting Breakdown */}
               <div className="ml-8 bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <div className="flex flex-wrap gap-3 mb-3">
+                <p className="text-xs font-bold text-slate-700 mb-3">Hasil Voting dari {result.kUsed} Tetangga Terdekat:</p>
+                <div className="flex flex-wrap gap-3 mb-4">
                   {result.neighbors.map((n) => (
                     <div key={n.rank} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold ${
                       n.label === result.predictedClass
@@ -754,18 +892,24 @@ export default function Predictor() {
                     </div>
                   ))}
                 </div>
-                <div className="text-xs text-slate-600">
-                  Hasil: {Object.entries(result.votes).map(([cls, count]) => (
-                    <span key={cls} className="mr-3">
-                      <span className={`font-bold ${Number(cls) === result.predictedClass ? 'text-slate-900 underline' : 'text-slate-500'}`}>
-                        {CLASS_LABELS[Number(cls)]}
-                      </span>
-                      {' '}= {count} suara
-                    </span>
-                  ))}
+                <div className="space-y-2 mb-4">
+                  {Object.entries(result.votes).map(([cls, count]) => {
+                    const pct = (count / result.kUsed) * 100;
+                    const isWinner = Number(cls) === result.predictedClass;
+                    return (
+                      <div key={cls} className={`flex items-center gap-3 text-xs ${isWinner ? 'font-bold text-slate-900' : 'text-slate-500'}`}>
+                        <span className="w-32">{CLASS_LABELS[Number(cls)]}</span>
+                        <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${isWinner ? 'bg-slate-900' : 'bg-slate-400'}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="w-24 text-right font-mono">{count} suara ({pct.toFixed(0)}%)</span>
+                        {isWinner && <span className="text-[10px] px-2 py-0.5 bg-slate-900 text-white rounded-full font-bold">MENANG</span>}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="mt-2 text-xs font-bold text-slate-900">
-                  → Prediksi: {result.predictedLabel} ({result.votes[result.predictedClass]}/{result.kUsed} suara, {((result.votes[result.predictedClass] / result.kUsed) * 100).toFixed(0)}%)
+                <div className="bg-white rounded-lg p-3 border border-slate-200 text-xs font-bold text-slate-900">
+                  → Prediksi: {result.predictedLabel} ({result.votes[result.predictedClass]}/{result.kUsed} suara = {((result.votes[result.predictedClass] / result.kUsed) * 100).toFixed(0)}%)
                 </div>
               </div>
             </div>

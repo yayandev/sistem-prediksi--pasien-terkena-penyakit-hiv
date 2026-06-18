@@ -152,6 +152,7 @@ export function labelEncode(cleanedData: RawDatasetRow[]): {
  */
 export function runFullPreprocessing(rawData: RawDatasetRow[]): {
   cleanedData: RawDatasetRow[];
+  encodedBeforeSmote: DatasetRow[];
   encodedData: DatasetRow[];
   encodingMaps: Record<string, Record<string, number>>;
   report: PreprocessingReport;
@@ -160,6 +161,9 @@ export function runFullPreprocessing(rawData: RawDatasetRow[]): {
   const removedRows = rawData.length - cleanedData.length;
 
   const { encoded, maps } = labelEncode(cleanedData);
+
+  // Simpan encoded data SEBELUM SMOTE untuk pipeline evaluasi
+  const encodedBeforeSmote = [...encoded];
 
   // SMOTE
   const smoteData = smoteAllClasses(encoded, 3, 42);
@@ -186,6 +190,7 @@ export function runFullPreprocessing(rawData: RawDatasetRow[]): {
 
   return {
     cleanedData,
+    encodedBeforeSmote,
     encodedData: smoteData,
     encodingMaps: maps,
     report,

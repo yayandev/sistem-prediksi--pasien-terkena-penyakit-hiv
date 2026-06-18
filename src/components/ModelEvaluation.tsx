@@ -20,7 +20,39 @@ import { smoteAllClasses } from '../utils/sMOTE';
 import { getBounds, normalizeDataset, getLabels } from '../utils/normalization';
 import { correlationMatrix } from '../utils/correlation';
 import rawDataset from '../data/raw_hiv_dataset.json';
-import { Table2, Target, TrendingUp, BarChart3, Layers, ChevronDown, ChevronUp, Code, Lightbulb } from 'lucide-react';
+import { Table2, Target, TrendingUp, BarChart3, Layers, ChevronDown, ChevronUp, Code, Lightbulb, BookOpen } from 'lucide-react';
+
+/* ================================================================
+   FormulaBox — komponen reusable untuk menampilkan rumus + keterangan
+   ================================================================ */
+function FormulaBox({ title, rumus, keterangan, contoh }: {
+  title: string;
+  rumus: string;
+  keterangan: string[];
+  contoh?: React.ReactNode;
+}) {
+  return (
+    <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+      <h4 className="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+        <BookOpen className="w-4 h-4" />
+        {title}
+      </h4>
+      <div className="bg-white rounded-lg p-3 border border-blue-100 mb-3">
+        <code className="text-xs text-slate-800 font-mono leading-relaxed">{rumus}</code>
+      </div>
+      <p className="text-xs font-bold text-blue-800 mb-1">Keterangan simbol:</p>
+      <div className="text-[11px] text-blue-700 space-y-0.5 mb-3">
+        {keterangan.map((k, i) => <p key={i} dangerouslySetInnerHTML={{ __html: k }} />)}
+      </div>
+      {contoh && (
+        <div className="bg-white rounded-lg p-3 border border-blue-100">
+          <p className="text-[11px] font-bold text-blue-800 mb-1">Contoh perhitungan:</p>
+          <div className="text-[11px] text-slate-600 leading-relaxed">{contoh}</div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ================================================================
    CodeBlock — komponen reusable untuk menampilkan blok kode
@@ -83,19 +115,19 @@ function Section({ title, icon: Icon, children, defaultOpen = false }: {
 export default function ModelEvaluation() {
   const [selectedK, setSelectedK] = useState<number>(3);
 
-  // Pipeline
+  // Pipeline — pakai encodedBeforeSmote untuk display agar angka benar
   const preprocessing = useMemo(() => runFullPreprocessing(rawDataset), []);
-  const split = useMemo(() => trainTestSplit(preprocessing.encodedData, 0.2, 42), [preprocessing.encodedData]);
+  const split = useMemo(() => trainTestSplit(preprocessing.encodedBeforeSmote, 0.2, 42), [preprocessing.encodedBeforeSmote]);
   const smoteTraining = useMemo(() => smoteAllClasses(split.train, 3, 42), [split.train]);
   const normalization = useMemo(() => {
     const bounds = getBounds(smoteTraining);
     return { bounds, normalizedTrain: normalizeDataset(smoteTraining, bounds), normalizedTest: normalizeDataset(split.test, bounds) };
   }, [smoteTraining, split.test]);
 
-  // Evaluasi
-  const evaluation = useMemo(() => evaluateModel(preprocessing.encodedData, selectedK, 42), [preprocessing.encodedData, selectedK]);
-  const kOptimization = useMemo(() => findOptimalK(preprocessing.encodedData, 15, 5, 42), [preprocessing.encodedData]);
-  const correlations = useMemo(() => correlationMatrix(preprocessing.encodedData), [preprocessing.encodedData]);
+  // Evaluasi — pakai encodedBeforeSmote (evaluateModel handle SMOTE sendiri)
+  const evaluation = useMemo(() => evaluateModel(preprocessing.encodedBeforeSmote, selectedK, 42), [preprocessing.encodedBeforeSmote, selectedK]);
+  const kOptimization = useMemo(() => findOptimalK(preprocessing.encodedBeforeSmote, 15, 5, 42), [preprocessing.encodedBeforeSmote]);
+  const correlations = useMemo(() => correlationMatrix(preprocessing.encodedBeforeSmote), [preprocessing.encodedBeforeSmote]);
 
   const classNames = ['Belum Tahu', 'Bukan ODHIV', 'ODHIV'];
 
@@ -151,6 +183,24 @@ export default function ModelEvaluation() {
             </p>
           </div>
         </div>
+
+        <FormulaBox
+          title="Rumus Data Cleaning"
+          rumus="cleaned_data = { baris ∈ raw_data | semua_kolom(baris) ≠ null }"
+          keterangan={[
+            '<code className="font-bold">raw_data</code> = seluruh data mentah sebelum dibersihkan',
+            '<code className="font-bold">baris</code> = satu record/pasien dengan semua fitur',
+            '<code className="font-bold">semua_kolom(baris) ≠ null</code> = kondisi: setiap kolom pada baris tersebut harus terisi (tidak kosong/null)',
+            '<code className="font-bold">cleaned_data</code> = hasil akhir: hanya baris yang lolos filter (tidak ada null)',
+          ]}
+          contoh={
+            <>
+              <p>Dataset mentah: {preprocessing.report.rawCount} baris → setelah cleaning: <strong>{preprocessing.report.cleanedCount} baris</strong></p>
+              <p>Dibuang: {preprocessing.report.removedRows} baris (punya null di kolom "kelompok_populasi")</p>
+              <p>Rumus sederhana: jika <strong>baris A</strong> punya null → <strong>hapus baris A</strong></p>
+            </>
+          }
+        />
 
         {/* Tabel */}
         <div className="overflow-x-auto">
@@ -249,6 +299,28 @@ export default function ModelEvaluation() {
           </div>
         </div>
 
+        <FormulaBox
+          title="Rumus LabelEncoder"
+          rumus="encoded_value = indexOf(sorted_unique_values, input_string)"
+          keterangan={[
+            '<code className="font-bold">sorted_unique_values</code> = daftar nilai unik pada suatu kolom, diurutkan secara alfabetis',
+            '<code className="font-bold">input_string</code> = nilai asli (string) dari suatu baris pada kolom tersebut',
+            '<code className="font-bold">indexOf()</code> = mencari posisi indeks (mulai dari 0) dari input_string dalam daftar yang sudah diurutkan',
+            '<code className="font-bold">encoded_value</code> = hasil: angka bulat (0, 1, 2, ...) yang merepresentasikan string',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p>Contoh kolom <strong>"jenis_kelamin"</strong>:</p>
+              <p>→ Unique values: ["Laki-laki", "Perempuan"] (sudah urut alfabet)</p>
+              <p>→ "Laki-laki" → <code>indexOf = 0</code></p>
+              <p>→ "Perempuan" → <code>indexOf = 1</code></p>
+              <p className="mt-2">Contoh kolom <strong>"kelompok_populasi"</strong>:</p>
+              <p>→ Unique values: ["Ibu Hamil", "ODHA", "Umum", "Waria"] (sudah urut alfabet)</p>
+              <p>→ "Ibu Hamil" = 0, "ODHA" = 1, "Umum" = 2, "Waria" = 3</p>
+            </div>
+          }
+        />
+
         {/* Mapping */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Object.entries(preprocessing.encodingMaps).map(([kolom, mapping]) => (
@@ -283,7 +355,7 @@ export default function ModelEvaluation() {
               </tr>
             </thead>
             <tbody>
-              {preprocessing.encodedData.slice(0, 3).map((row, i) => (
+              {preprocessing.encodedBeforeSmote.slice(0, 3).map((row, i) => (
                 <tr key={i} className="hover:bg-slate-50">
                   <td className="p-2 border border-slate-300 font-mono">{row.umur}</td>
                   <td className="p-2 border border-slate-300 font-mono">{row.jenis_kelamin}</td>
@@ -339,7 +411,7 @@ export default function ModelEvaluation() {
         <div className="p-4 bg-slate-50 border border-slate-200">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Alur Tahapan:</h3>
           <div className="text-xs text-slate-700 space-y-1">
-            <p><strong>Input:</strong> {preprocessing.encodedData.length} data udah jadi angka (14 kolom: 13 fitur + 1 target).</p>
+            <p><strong>Input:</strong> {preprocessing.encodedBeforeSmote.length} data udah jadi angka (14 kolom: 13 fitur + 1 target).</p>
             <p><strong>Proses:</strong> Acak pakai Fisher-Yates Shuffle (seed=42) → 80% training, 20% testing.</p>
             <p><strong>Output:</strong> Training = {split.train.length} data, Testing = {split.test.length} data.</p>
           </div>
@@ -374,6 +446,51 @@ export default function ModelEvaluation() {
             </p>
           </div>
         </div>
+
+        <FormulaBox
+          title="Rumus Train/Test Split"
+          rumus={'splitIndex = floor(n × (1 - testSize))   |   n_train = splitIndex   |   n_test = n - splitIndex'}
+          keterangan={[
+            `<code className="font-bold">n</code> = jumlah total data setelah cleaning + encoding = ${preprocessing.encodedBeforeSmote.length}`,
+            '<code className="font-bold">testSize</code> = proporsi data testing = 0.2 (20%)',
+            '<code className="font-bold">(1 - testSize)</code> = proporsi data training = 0.8 (80%)',
+            '<code className="font-bold">splitIndex</code> = indeks pemisah (dibulatkan ke bawah dengan floor)',
+            '<code className="font-bold">floor()</code> = membulatkan ke bilangan bulat terdekat yang lebih kecil',
+            `<code className="font-bold">n_train</code> = jumlah data training = ${split.train.length} (80%)`,
+            `<code className="font-bold">n_test</code> = jumlah data testing = ${split.test.length} (20%)`,
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>Contoh perhitungan:</strong></p>
+              <p>n = {preprocessing.encodedBeforeSmote.length}, testSize = 0.2</p>
+              <p>splitIndex = floor({preprocessing.encodedBeforeSmote.length} × 0.8) = floor({preprocessing.encodedBeforeSmote.length * 0.8}) = <strong>{split.train.length}</strong></p>
+              <p>Training = data[0..{split.train.length - 1}] = <strong>{split.train.length} data</strong> (80%)</p>
+              <p>Testing = data[{split.train.length}..{preprocessing.encodedBeforeSmote.length - 1}] = <strong>{split.test.length} data</strong> (20%)</p>
+            </div>
+          }
+        />
+
+        <FormulaBox
+          title="Rumus Fisher-Yates Shuffle (Pengacakan Data)"
+          rumus="for i = (n-1) down to 1:   j = floor(random() × (i + 1))   |   tukar(array[i], array[j])"
+          keterangan={[
+            '<code className="font-bold">n</code> = panjang array',
+            '<code className="font-bold">i</code> = indeks saat ini (mulai dari belakang, n-1 sampai 1)',
+            '<code className="font-bold">j</code> = indeks acak antara 0 dan i (inklusif)',
+            '<code className="font-bold">random()</code> = fungsi PRNG (Linear Congruential Generator) dengan seed tetap',
+            '<code className="font-bold">tukar(a, b)</code> = menukar posisi dua elemen di array (swap in-place)',
+            '<code className="font-bold">seed = 42</code> = angka awal PRNG agar hasilnya reproducible (sama tiap kali dijalankan)',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>PRNG (Linear Congruential Generator):</strong></p>
+              <p>next = (a × current + c) mod m</p>
+              <p>a = 16807 (multiplier), c = 0, m = 2^31 - 1 = 2147483647 (modulus)</p>
+              <p><strong>Kenapa pakai seed=42?</strong> Math.random() beda tiap kali. Dengan seed → PRNG deterministik → hasil sama persis.</p>
+              <p><strong>Kenapa Fisher-Yates?</strong> Kompleksitas O(n), setiap posisi punya probabilitas SAMA untuk menerima elemen apapun.</p>
+            </div>
+          }
+        />
 
         {/* Visualisasi */}
         <div className="grid grid-cols-2 gap-4">
@@ -492,6 +609,31 @@ export default function ModelEvaluation() {
           </div>
         </div>
 
+        <FormulaBox
+          title="Rumus SMOTE (Interpolasi Linear)"
+          rumus="x_sintetis = x_i + α × (x_nn - x_i)"
+          keterangan={[
+            '<code className="font-bold">x_sintetis</code> = data sintetis baru yang dihasilkan SMOTE',
+            '<code className="font-bold">x_i</code> = satu sampel acak dari kelas minoritas yang dipilih',
+            '<code className="font-bold">x_nn</code> = tetangga terdekat dari x_i (dari kelas yang sama), dipilih secara acak dari K tetangga',
+            '<code className="font-bold">α (alpha)</code> = angka random antara 0 dan 1. Menentukan posisi data baru di "garis" antara x_i dan x_nn',
+            '<code className="font-bold">(x_nn - x_i)</code> = vektor selisih antara tetangga dan sampel asli (arah dan jarak)',
+            '<code className="font-bold">K = 3</code> = jumlah tetangga terdekat yang dipertimbangkan',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>Contoh konkret:</strong></p>
+              <p>x_i = [25, 0, 1, 3, ...] (umur=25, Laki-laki, ODHA, ...)</p>
+              <p>x_nn = [30, 0, 1, 2, ...] (tetangga terdekat)</p>
+              <p>α = 0.4</p>
+              <p>x_sintetis = [25, 0, 1, 3, ...] + 0.4 × ([30, 0, 1, 2, ...] - [25, 0, 1, 3, ...])</p>
+              <p>x_sintetis = [25, 0, 1, 3, ...] + 0.4 × [5, 0, 0, -1, ...]</p>
+              <p>x_sintetis = [25 + 2, 0, 1, 3 - 0.4, ...] = <strong>[27, 0, 1, 3, ...]</strong></p>
+              <p className="mt-1"><strong>Jumlah data sintetis per kelas:</strong> maxClassSize - countKelas = target agar semua kelas sama banyak</p>
+            </div>
+          }
+        />
+
         {/* Visualisasi */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-4 border border-slate-200">
@@ -607,6 +749,26 @@ export default function ModelEvaluation() {
           </div>
         </div>
 
+        <FormulaBox
+          title="Rumus Min-Max Normalization"
+          rumus="x' = (x - min) / (max - min)   |   Clamp: x' = max(0, min(1, x'))"
+          keterangan={[
+            '<code className="font-bold">x\'</code> = nilai fitur SETELAH normalisasi (rentang 0 s/d 1)',
+            '<code className="font-bold">x</code> = nilai fitur asli (sebelum normalisasi)',
+            '<code className="font-bold">min</code> = nilai minimum pada fitur tersebut di seluruh data training (setelah SMOTE)',
+            '<code className="font-bold">max</code> = nilai maximum pada fitur tersebut di seluruh data training (setelah SMOTE)',
+            '<code className="font-bold">(max - min)</code> = range / rentang nilai fitur',
+            '<code className="font-bold">Clamp [0, 1]</code> = membatasi hasil agar tidak kurang dari 0 atau lebih dari 1',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>Contoh konkret:</strong> Fitur "umur" min={normalization.bounds.min[0]}, max={normalization.bounds.max[0]}</p>
+              <p>x = 35 → x' = (35 - {normalization.bounds.min[0]}) / ({normalization.bounds.max[0]} - {normalization.bounds.min[0]}) = {(35 - normalization.bounds.min[0]).toFixed(2)} / {(normalization.bounds.max[0] - normalization.bounds.min[0]).toFixed(2)} = <strong>{((35 - normalization.bounds.min[0]) / (normalization.bounds.max[0] - normalization.bounds.min[0])).toFixed(4)}</strong></p>
+              <p className="mt-1"><strong>Kenapa kritis untuk KNN?</strong> Tanpa normalisasi, fitur Umur (21-62) mendominasi jarak dibanding fitur biner (0-1). Min-Max bikin semua fitur setara di range [0,1].</p>
+            </div>
+          }
+        />
+
         {/* Bounds */}
         <div className="p-4 border border-slate-200">
           <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-2">Bounds (Min/Max per Fitur):</h4>
@@ -701,6 +863,51 @@ export default function ModelEvaluation() {
             </p>
           </div>
         </div>
+
+        <FormulaBox
+          title="Rumus Euclidean Distance (Langkah 1 KNN)"
+          rumus="d(Q, T) = √( (Q₁ - T₁)² + (Q₂ - T₂)² + ... + (Q₁₃ - T₁₃)² )  =  √( Σᵢ₌₁..₁₃ (Qᵢ - Tᵢ)² )"
+          keterangan={[
+            '<code className="font-bold">d(Q, T)</code> = jarak Euclidean antara data query (Q) dan data tetangga (T)',
+            '<code className="font-bold">Q</code> = data pasien yang akan diprediksi (query input, sudah dinormalisasi)',
+            '<code className="font-bold">T</code> = satu data dari data training (tetangga, sudah dinormalisasi)',
+            '<code className="font-bold">Qᵢ</code> = nilai fitur ke-i pada data query',
+            '<code className="font-bold">Tᵢ</code> = nilai fitur ke-i pada data tetangga',
+            '<code className="font-bold">i</code> = indeks fitur, dari 1 sampai 13 (jumlah fitur)',
+            '<code className="font-bold">(Qᵢ - Tᵢ)</code> = selisih nilai fitur ke-i antara query dan tetangga',
+            '<code className="font-bold">(Qᵢ - Tᵢ)²</code> = kuadrat selisih (membuat semua nilai positif & menonjolkan perbedaan besar)',
+            '<code className="font-bold">Σᵢ₌₁..₁₃</code> = penjumlahan (sigma) semua kuadrat selisih dari fitur ke-1 sampai ke-13',
+            '<code className="font-bold">√</code> = akar kuadrat (mengembalikan satuan ke skala asli)',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>3 Langkah KNN:</strong></p>
+              <p>1. Hitung d(Q, Ti) ke SEMUA data training</p>
+              <p>2. Urutkan jarak dari terkecil → ambil K tetangga terdekat</p>
+              <p>3. Majority voting: kelas paling banyak muncul = hasil prediksi</p>
+              <p className="mt-1"><strong>Interpretasi:</strong> d = 0 artinya identik. d kecil = mirip. d besar = berbeda.</p>
+            </div>
+          }
+        />
+
+        <FormulaBox
+          title="Rumus Majority Voting (Langkah 3 KNN)"
+          rumus="prediksi = argmax_c ( jumlah_tetangga_kelas_c )   |   Confidence = suara_pemenang / K"
+          keterangan={[
+            '<code className="font-bold">argmax_c</code> = mencari kelas c yang menghasilkan jumlah suara terbanyak',
+            '<code className="font-bold">c</code> = kelas (0 = Belum Tahu, 1 = Bukan ODHIV, 2 = ODHIV)',
+            '<code className="font-bold">jumlah_tetangga_kelas_c</code> = berapa banyak tetangga yang labelnya kelas c',
+            '<code className="font-bold">K</code> = jumlah tetangga terdekat yang dipertimbangkan (default: 3)',
+            '<code className="font-bold">Confidence</code> = tingkat kepercayaan (0% s/d 100%)',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>Contoh:</strong> K=3, tetangga = [ODHIV, ODHIV, Bukan ODHIV]</p>
+              <p>ODHIV = 2 suara, Bukan ODHIV = 1 suara</p>
+              <p>→ Prediksi = ODHIV (2/3 suara = 67% confidence)</p>
+            </div>
+          }
+        />
 
         {/* Kode */}
         <CodeBlock title="📄 Lihat Kode — knn.ts → knnPredictWithDetails()" defaultOpen={true}>
@@ -809,6 +1016,27 @@ export default function ModelEvaluation() {
           </div>
         </div>
 
+        <FormulaBox
+          title="Rumus Confusion Matrix & Komponennya"
+          rumus="CM[i][j] = Σ δ(actual_k = i, predicted_k = j)   |   untuk semua sampel k"
+          keterangan={[
+            '<code className="font-bold">CM[i][j]</code> = jumlah sampel yang aktualnya kelas i tapi diprediksi sebagai kelas j',
+            '<code className="font-bold">i</code> = indeks baris = label AKTUAL (ground truth)',
+            '<code className="font-bold">j</code> = indeks kolom = label PREDIKSI (hasil model)',
+            '<code className="font-bold">δ(a, b)</code> = fungsi delta: bernilai 1 jika a = b, 0 jika a ≠ b',
+            '<code className="font-bold">Diagonal CM[i][i]</code> = prediksi BENAR',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>Definisi TP, FP, FN untuk kelas X:</strong></p>
+              <p><strong>TP (True Positive)</strong> = CM[X][X] → prediksi benar kelas X</p>
+              <p><strong>FP (False Positive)</strong> = Σⱼ CM[j][X] - CM[X][X] → non-X salah dikatakan X</p>
+              <p><strong>FN (False Negative)</strong> = Σⱼ CM[X][j] - CM[X][X] → X tidak ditemukan model</p>
+              <p><strong>TN (True Negative)</strong> = total - TP - FP - FN → benar prediksi kelas lain</p>
+            </div>
+          }
+        />
+
         <CodeBlock title="📄 Lihat Kode — evaluation.ts → computeConfusionMatrix()">
           <div className="whitespace-pre"><span className="text-pink-400">export function</span> <span className="text-blue-400">computeConfusionMatrix</span>(actual, predicted, numClasses) {'{'}</div>
           <div className="whitespace-pre">  <span className="text-slate-500 italic">{'// Inisialisasi matriks 3×3 dengan semua 0'}</span></div>
@@ -894,6 +1122,53 @@ export default function ModelEvaluation() {
           </div>
         </div>
 
+        <FormulaBox
+          title="Rumus Metrik Evaluasi (4 Metrik Utama)"
+          rumus={"Accuracy = (TP+TN) / Total   |   Precision = TP / (TP+FP)   |   Recall = TP / (TP+FN)   |   F1 = 2×P×R / (P+R)"}
+          keterangan={[
+            '<code className="font-bold">TP (True Positive)</code> = benar prediksi positif',
+            '<code className="font-bold">TN (True Negative)</code> = benar prediksi negatif',
+            '<code className="font-bold">FP (False Positive)</code> = salah prediksi positif (false alarm)',
+            '<code className="font-bold">FN (False Negative)</code> = salah prediksi negatif (missed detection)',
+            '<code className="font-bold">Total</code> = TP + TN + FP + FN = jumlah semua sampel testing',
+            '<code className="font-bold">P</code> = Precision, <code className="font-bold">R</code> = Recall',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>Contoh konkret (K={selectedK}, kelas ODHIV):</strong></p>
+              {evaluation.perClass.find(m => m.label === 2) && (() => {
+                const m = evaluation.perClass.find(m => m.label === 2)!;
+                const total = m.tp + m.fp + m.fn;
+                return (
+                  <>
+                    <p>TP = {m.tp}, FP = {m.fp}, FN = {m.fn}</p>
+                    <p>Accuracy = {evaluation.accuracy.toFixed(4)} = <strong>{(evaluation.accuracy * 100).toFixed(2)}%</strong></p>
+                    <p>Precision = {m.tp} / ({m.tp} + {m.fp}) = {(m.precision * 100).toFixed(2)}%</p>
+                    <p>Recall = {m.tp} / ({m.tp} + {m.fn}) = {(m.recall * 100).toFixed(2)}%</p>
+                    <p>F1 = 2 × {(m.precision).toFixed(4)} × {(m.recall).toFixed(4)} / ({(m.precision).toFixed(4)} + {(m.recall).toFixed(4)}) = {(m.f1Score * 100).toFixed(2)}%</p>
+                  </>
+                );
+              })()}
+            </div>
+          }
+        />
+
+        <FormulaBox
+          title="Rumus Macro Average"
+          rumus="MacroPrecision = Σ(Precision_i) / n   |   MacroRecall = Σ(Recall_i) / n   |   MacroF1 = Σ(F1_i) / n"
+          keterangan={[
+            '<code className="font-bold">n</code> = jumlah kelas = 3 (Belum Tahu, Bukan ODHIV, ODHIV)',
+            '<code className="font-bold">Precision_i</code> = precision kelas ke-i',
+            '<code className="font-bold">Macro Average</code> = rata-rata ARITMATIKA dari semua kelas, memberikan bobot SAMA untuk tiap kelas',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p>MacroPrecision = (P_belong_tahu + P_bukan_odhiv + P_odhiv) / 3 = <strong>{(evaluation.macroPrecision * 100).toFixed(2)}%</strong></p>
+              <p>MacroF1 = (F1_belong_tahu + F1_bukan_odhiv + F1_odhiv) / 3 = <strong>{(evaluation.macroF1Score * 100).toFixed(2)}%</strong></p>
+            </div>
+          }
+        />
+
         {/* Detail per kelas */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -975,6 +1250,33 @@ export default function ModelEvaluation() {
           </div>
         </div>
 
+        <FormulaBox
+          title="Rumus K-Fold Cross-Validation"
+          rumus="MeanMetric = (1/K) × Σⱼ₌₁ᴷ Metric_fold_j   |   StdDev = √( Σ(xᵢ - x̄)² / n )"
+          keterangan={[
+            '<code className="font-bold">K</code> = jumlah fold (bagian) = 5',
+            '<code className="font-bold">fold_j</code> = ke-1 putaran validasi ke-j (testing = fold j, training = sisanya)',
+            '<code className="font-bold">Metric_fold_j</code> = nilai metrik (F1/Accuracy) pada fold ke-j',
+            '<code className="font-bold">MeanMetric</code> = rata-rata metrik dari semua K fold',
+            '<code className="font-bold">xᵢ</code> = nilai metrik pada fold ke-i',
+            '<code className="font-bold">x̄</code> = rata-rata (Mean) dari semua fold',
+            '<code className="font-bold">n</code> = jumlah fold = K',
+            '<code className="font-bold">StdDev</code> = standar deviasi (pengukuran konsistensi)',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>Alur 5-Fold CV:</strong></p>
+              <p>Putaran 1: Testing=Fold1, Training=Fold2+3+4+5 → Evaluasi → F1_fold1</p>
+              <p>Putaran 2: Testing=Fold2, Training=Fold1+3+4+5 → Evaluasi → F1_fold2</p>
+              <p>Putaran 3: Testing=Fold3, Training=Fold1+2+4+5 → Evaluasi → F1_fold3</p>
+              <p>Putaran 4: Testing=Fold4, Training=Fold1+2+3+5 → Evaluasi → F1_fold4</p>
+              <p>Putaran 5: Testing=Fold5, Training=Fold1+2+3+4 → Evaluasi → F1_fold5</p>
+              <p className="mt-1"><strong>Mean F1</strong> = (F1_1 + F1_2 + F1_3 + F1_4 + F1_5) / 5</p>
+              <p><strong>K optimal</strong> = K dengan Mean F1 tertinggi dari K=1 s/d K=15 = <strong>K={kOptimization.optimalK}</strong> (F1 = {(kOptimization.optimalF1Score * 100).toFixed(2)}%)</p>
+            </div>
+          }
+        />
+
         <div className="space-y-2">
           {kOptimization.results.map((r) => (
             <div key={r.k} className="flex items-center gap-3">
@@ -1044,6 +1346,35 @@ export default function ModelEvaluation() {
             </p>
           </div>
         </div>
+
+        <FormulaBox
+          title="Rumus Korelasi Pearson"
+          rumus="r = Σᵢ₌₁ⁿ ((xᵢ - x̄) × (yᵢ - ȳ))  /  √( Σᵢ₌₁ⁿ (xᵢ - x̄)² × Σᵢ₌₁ⁿ (yᵢ - ȳ)² )"
+          keterangan={[
+            '<code className="font-bold">r</code> = koefisien korelasi Pearson (range: -1 s/d +1)',
+            '<code className="font-bold">xᵢ</code> = nilai fitur ke-i pada sampel ke-i',
+            '<code className="font-bold">yᵢ</code> = nilai fitur ke-j pada sampel ke-i (fitur kedua)',
+            '<code className="font-bold">x̄</code> = rata-rata (mean) dari seluruh nilai x = Σxᵢ / n',
+            '<code className="font-bold">ȳ</code> = rata-rata (mean) dari seluruh nilai y = Σyᵢ / n',
+            '<code className="font-bold">n</code> = jumlah sampel (total data)',
+            '<code className="font-bold">(xᵢ - x̄)</code> = selisih nilai x ke-i dari rata-rata x',
+            '<code className="font-bold">(yᵢ - ȳ)</code> = selisih nilai y ke-i dari rata-rata y',
+            '<code className="font-bold">Σ</code> = simbol penjumlahan (sigma)',
+            '<code className="font-bold">√</code> = akar kuadrat',
+          ]}
+          contoh={
+            <div className="space-y-1">
+              <p><strong>Skala Interpretasi r:</strong></p>
+              <p>|r| = 0.7 s/d 1.0 → <strong>Korelasi Kuat</strong> (warna merah di tabel)</p>
+              <p>|r| = 0.3 s/d 0.7 → <strong>Korelasi Sedang</strong> (warna kuning)</p>
+              <p>|r| = 0.0 s/d 0.3 → <strong>Korelasi Lemah</strong> (warna hijau)</p>
+              <p>{'|r| < 0.1'} → <strong>Tidak ada korelasi linear</strong></p>
+              <p className="mt-1">r = +1 → positif sempurna (satu naik, lain naik)</p>
+              <p>r = -1 → negatif sempurna (satu naik, lain turun)</p>
+              <p>r = 0 → tidak ada hubungan linear</p>
+            </div>
+          }
+        />
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
