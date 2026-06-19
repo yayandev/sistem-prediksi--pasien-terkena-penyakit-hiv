@@ -11,6 +11,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Eye,
   Download,
   Loader2,
   AlertCircle,
@@ -217,18 +218,27 @@ export default function PatientList() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(p.id!); }}
-                        disabled={deleting === p.id}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                        title="Hapus"
-                      >
-                        {deleting === p.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/pasien/${p.id}`); }}
+                          className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                          title="Lihat Detail"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(p.id!); }}
+                          disabled={deleting === p.id}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                          title="Hapus"
+                        >
+                          {deleting === p.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
