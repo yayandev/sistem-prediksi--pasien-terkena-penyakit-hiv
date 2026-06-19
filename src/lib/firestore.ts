@@ -112,6 +112,13 @@ export async function getPatients(): Promise<PatientData[]> {
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as PatientData));
 }
 
+export async function getPatient(id: string): Promise<PatientData | null> {
+  const ref = doc(db, 'patients', id);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as PatientData;
+}
+
 export async function deletePatient(id: string) {
   await deleteDoc(doc(db, 'patients', id));
 }

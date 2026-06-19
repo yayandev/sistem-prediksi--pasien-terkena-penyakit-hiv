@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Users,
   Plus,
@@ -29,6 +30,7 @@ import AddPatientModal from './AddPatientModal';
 
 export default function PatientList() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<PatientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -196,7 +198,7 @@ export default function PatientList() {
               </thead>
               <tbody>
                 {paginated.map((p, idx) => (
-                  <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                  <tr key={p.id} onClick={() => navigate(`/dashboard/pasien/${p.id}`)} className="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer">
                     <td className="px-6 py-4 text-slate-400 font-mono text-xs">{startIndex + idx + 1}</td>
                     <td className="px-6 py-4 font-semibold text-slate-900">{p.nama}</td>
                     <td className="px-6 py-4 text-slate-600">{p.umur}</td>
@@ -216,7 +218,7 @@ export default function PatientList() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => handleDelete(p.id!)}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(p.id!); }}
                         disabled={deleting === p.id}
                         className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
                         title="Hapus"

@@ -35,6 +35,8 @@ import Documentation from './components/Documentation';
 import ModelEvaluation from './components/ModelEvaluation';
 import About from './components/About';
 import Profile from './components/Profile';
+import PatientDetail from './components/PatientDetail';
+import AdminHistory from './components/AdminHistory';
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -92,7 +94,9 @@ function AppLayout() {
               <Route path="/dashboard/riwayat/:id" element={<ProtectedRoute><PredictionDetail /></ProtectedRoute>} />
               <Route path="/dashboard/riwayat" element={<ProtectedRoute><PatientHistory /></ProtectedRoute>} />
               <Route path="/dashboard/pasien" element={<ProtectedRoute requiredRole="admin"><PatientList /></ProtectedRoute>} />
+              <Route path="/dashboard/pasien/:id" element={<ProtectedRoute requiredRole="admin"><PatientDetail /></ProtectedRoute>} />
               <Route path="/dashboard/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
+              <Route path="/dashboard/admin/riwayat" element={<ProtectedRoute requiredRole="admin"><AdminHistory /></ProtectedRoute>} />
               <Route path="/dashboard/evaluasi" element={<ProtectedRoute><ModelEvaluation /></ProtectedRoute>} />
               <Route path="/dashboard/pengetahuan" element={<ProtectedRoute><Documentation /></ProtectedRoute>} />
               <Route path="/dashboard/tentang" element={<About />} />
