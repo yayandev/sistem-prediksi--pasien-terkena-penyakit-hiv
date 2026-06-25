@@ -35,6 +35,7 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  patientOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -44,7 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard/admin/riwayat', label: 'Riwayat Prediksi', icon: History, adminOnly: true },
   { to: '/dashboard/admin/users', label: 'Kelola Users', icon: UserCog, adminOnly: true },
   { to: '/dashboard/evaluasi', label: 'Evaluasi Model', icon: Zap },
-  { to: '/dashboard/riwayat', label: 'Riwayat Saya', icon: History },
+  { to: '/dashboard/riwayat', label: 'Riwayat Saya', icon: History, patientOnly: true },
   { to: '/dashboard/pengetahuan', label: 'Pengetahuan', icon: BookOpen },
   { to: '/dashboard/tentang', label: 'Tentang', icon: Info },
   { to: '/dashboard/profil', label: 'Profil Saya', icon: CircleUserRound },
@@ -59,7 +60,11 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     onClose();
   }, [location.pathname]);
 
-  const filteredItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+  const filteredItems = NAV_ITEMS.filter((item) => {
+    if (isAdmin && item.patientOnly) return false;
+    if (!isAdmin && item.adminOnly) return false;
+    return true;
+  });
 
   async function handleLogout() {
     try { await signOut(); } catch { /* silent */ }
