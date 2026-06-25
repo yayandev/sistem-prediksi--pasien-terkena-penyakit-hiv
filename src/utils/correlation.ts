@@ -124,17 +124,26 @@ export interface CorrelationPair {
 }
 
 /**
- * Menghitung matriks korelasi untuk semua fitur dalam dataset.
- *
- * Fitur yang dihitung korelasinya:
+ * Menghitung korelasi Pearson antara semua kolom numerik (termasuk label encoded).
+ * 
+ * Fitur yang dihitung korelasinya (13 input + 1 target):
  *   1. umur
  *   2. jenis_kelamin
  *   3. kelompok_populasi
  *   4. alasan_kunjungan
- *   5. status (label)
+ *   5. riwayat_tes_hiv
+ *   6. riwayat_ims
+ *   7. jumlah_pasangan_seksual
+ *   8. penggunaan_kondom
+ *   9. penggunaan_napza_suntik
+ *   10. status_pernikahan
+ *   11. usia_pertama_hubungan
+ *   12. terapi_arv
+ *   13. gejala_klinis
+ *   14. status (label)
  *
  * @param dataset - Dataset asli
- * @returns Matriks korelasi (5×5) + daftar pasangan korelasi
+ * @returns Matriks korelasi (14×14) + daftar pasangan korelasi
  */
 export function correlationMatrix(dataset: DatasetRow[]): {
   matrix: number[][];

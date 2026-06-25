@@ -454,8 +454,8 @@ export default function Predictor() {
               </div>
               <p className="text-xs opacity-80">
                 {result.predictedClass === 0 && 'Pasien terdeteksi memiliki karakteristik "Belum Tahu" — kemungkinan belum pernah melakukan tes HIV atau hasil tes sebelumnya tidak tersedia.'}
-                {result.predictedClass === 1 && 'Berdasarkan {result.kUsed} pasien terdekat, mayoritas diklasifikasikan sebagai Bukan ODHIV. Tidak ditemukan indikasi kuat terinfeksi HIV berdasarkan fitur yang dimasukkan.'}
-                {result.predictedClass === 2 && 'Berdasarkan {result.kUsed} pasien terdekat, terdapat indikasi kuat terinfeksi HIV. Segera lakukan tes konfirmasi di fasilitas kesehatan terdekat.'}
+                {result.predictedClass === 1 && `Berdasarkan ${result.kUsed} pasien terdekat, mayoritas diklasifikasikan sebagai Bukan ODHIV. Tidak ditemukan indikasi kuat terinfeksi HIV berdasarkan fitur yang dimasukkan.`}
+                {result.predictedClass === 2 && `Berdasarkan ${result.kUsed} pasien terdekat, terdapat indikasi kuat terinfeksi HIV. Segera lakukan tes konfirmasi di fasilitas kesehatan terdekat.`}
               </p>
             </div>
           </div>
